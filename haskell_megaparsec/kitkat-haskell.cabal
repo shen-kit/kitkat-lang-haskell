@@ -53,13 +53,17 @@ extra-doc-files:    CHANGELOG.md
 common warnings
     ghc-options: -Wall
 
+default-extensions: OverloadedStrings
+
 library
-	exposed-modules:
-		Parser,
-		Types
-	hs-source-dirs:
-		src
-    build-depends: base ^>=4.17.2.1
+  exposed-modules:
+    Types,
+    Lexer,
+  hs-source-dirs: src
+  build-depends: base ^>=4.17.2.1
+                 , text
+                 , megaparsec
+                 , parser-combinators
 
 
 executable kitkat-haskell
