@@ -110,11 +110,11 @@ pBinOp :: Parser Token
 pBinOp = pAdd <|> pMinus <|> pMultiply <|> pDivide <|> pModulus
   where
     pAdd, pMinus, pMultiply, pDivide, pModulus :: Parser Token
-    pAdd = TBinOp <$> lexeme (char '+')
-    pMinus = TBinOp <$> lexeme (char '-')
-    pMultiply = TBinOp <$> lexeme (char '*')
-    pDivide = TBinOp <$> lexeme (char '/')
-    pModulus = TBinOp <$> lexeme (char '%')
+    pAdd = TBinOp <$> symbol "+"
+    pMinus = TBinOp <$> symbol "-"
+    pMultiply = TBinOp <$> symbol "*"
+    pDivide = TBinOp <$> symbol "/"
+    pModulus = TBinOp <$> symbol "%"
 
 -- parse unary operators
 pUnOp :: Parser Token

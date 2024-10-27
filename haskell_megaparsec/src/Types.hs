@@ -1,4 +1,4 @@
-module Types (Token (..)) where
+module Types (module Types) where
 
 import Data.Text (Text)
 
@@ -17,7 +17,7 @@ data Token
   | TKeyword Text
   | -- operators
     TUnOp Text -- e.g. '-', '++'
-  | TBinOp Char
+  | TBinOp Text
   | TEquals
   | -- flow control
     TLParen
@@ -33,13 +33,11 @@ data Token
 -- AST type definitions
 
 data Expr
-  = IDENT String -- identifier name
-  | INT Int -- -1, 0, 1, ...
-  | FLOAT Float -- 1.0, 3.14
-  | NEG Expr -- -(expr)
-  | SUM Expr Expr -- (expr) + (expr)
-  | DIFFERENCE Expr Expr -- (expr) - (expr)
-  | PRODUCT Expr Expr -- (expr) * (expr)
-  | DIVISION Expr Expr -- (expr) / (expr)
-  | MODULUS Expr Expr -- (expr) % (expr)
+  = Ident String -- identifier name
+  | IntLit Int -- -1, 0, 1, ...
+  | FloatLit Float -- 1.0, 3.14
+  | StringLit Text -- 1.0, 3.14
+  | CharLit Char -- 1.0, 3.14
+  | UnOp Text Expr -- -(expr)
+  | BinOp Text Expr Expr -- (expr) + (expr)
   deriving (Eq, Ord, Show)
