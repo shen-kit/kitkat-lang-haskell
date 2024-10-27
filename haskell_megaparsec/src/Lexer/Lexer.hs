@@ -105,8 +105,52 @@ pCloseParen = TRParen <$ lexeme (char ')')
 pOpenBrace = TLBrace <$ lexeme (char '{')
 pCloseBrace = TRBrace <$ lexeme (char '}')
 
+-- parse binary operators
+pBinOp :: Parser Token
+pBinOp = pAdd <|> pMinus <|> pMultiply <|> pDivide <|> pModulus
+  where
+    pAdd, pMinus, pMultiply, pDivide, pModulus :: Parser Token
+    pAdd = TBinOp <$> lexeme (char '+')
+    pMinus = TBinOp <$> lexeme (char '-')
+    pMultiply = TBinOp <$> lexeme (char '*')
+    pDivide = TBinOp <$> lexeme (char '/')
+    pModulus = TBinOp <$> lexeme (char '%')
+
+-- parse unary operators
+pUnOp :: Parser Token
+pUnOp = pIncrement <|> pDecrement <|> pNegate
+  where
+    pIncrement, pDecrement, pNegate :: Parser Token
+    pIncrement = TUnOp <$> symbol "++"
+    pDecrement = TUnOp <$> symbol "--"
+    pNegate = TUnOp <$> symbol "-"
+
+pEquals :: Parser Token
+pEquals = TEquals <$ char '='
+
+-- a parser that lexes an input string into a list of tokens
+-- order of precedence (atomic -> composed):
+--  1. operators, literals, keywords, variables, brackets
 lex :: Parser [Token]
-lex = many (lexeme $ choice [pNumLit, pOpenBrace, pCloseBrace, pOpenParen, pCloseParen, pKeywords, pIdent]) <* eof
+lex =
+  many
+    ( lexeme $
+        choice
+          [ pBinOp,
+            pUnOp,
+            pEquals,
+            pNumLit,
+            pStringLit,
+            pCharLit,
+            pOpenBrace,
+            pCloseBrace,
+            pOpenParen,
+            pCloseParen,
+            pKeywords,
+            pIdent
+          ]
+    )
+    <* eof
 
 -- -- parse inside a set of parentheses
 -- pParens :: Parser a -> Parser a

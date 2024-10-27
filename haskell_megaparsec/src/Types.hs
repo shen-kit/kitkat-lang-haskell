@@ -17,7 +17,8 @@ data Token
   | TKeyword Text
   | -- operators
     TUnOp Text -- e.g. '-', '++'
-  | TBinOp Text
+  | TBinOp Char
+  | TEquals
   | -- flow control
     TLParen
   | TRParen
