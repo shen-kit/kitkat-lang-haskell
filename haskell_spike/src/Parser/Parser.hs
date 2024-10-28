@@ -6,8 +6,7 @@ import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Void (Void)
 import Lexer.TokenTypes (Token (TBinOp, TInt))
 import Parser.ParserTypes
-import ParserUtils (Parser, skip)
-import Text.Megaparsec (MonadParsec (eof), Parsec, between, many, satisfy)
+import Text.Megaparsec (Parsec, many, satisfy)
 
 -- parser for a list of tokens
 type ParserT = Parsec Void [Token]
