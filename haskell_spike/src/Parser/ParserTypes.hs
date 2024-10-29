@@ -1,4 +1,4 @@
-module Parser.ParserTypes where
+module Parser.ParserTypes (module Parser.ParserTypes) where
 
 import Data.Text (Text)
 
@@ -8,7 +8,7 @@ data BOp = Plus | Minus | Multiply | Divide | Modulus
 
 data Expr
   = EInt Int
-  | BinOp BOp Expr Expr
+  | EBinOp BOp Expr Expr
   deriving (Show, Eq, Ord)
 
 -- a statement is one or more expressions
@@ -19,10 +19,6 @@ data Statement = SExpr Expr | SBlock [Expr]
 data Type = TyInt
   deriving (Show, Eq, Ord)
 
--- a binding is a name associated with a type
-data Bind = Bind {bName :: Text, bType :: Type}
-  deriving (Show, Eq)
-
 -- a program is a list of bindings
-data Program = Program [Expr]
+newtype Program = Program [Expr]
   deriving (Show, Eq)

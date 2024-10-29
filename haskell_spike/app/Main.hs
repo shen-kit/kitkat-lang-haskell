@@ -5,6 +5,8 @@ module Main where
 import Data.String (IsString (fromString))
 import Lexer.Lexer (lexer)
 import Parser.Parser
+import Parser.ParserTypes
+import Parser.SemantParser
 import Text.Megaparsec (parse)
 
 main :: IO ()

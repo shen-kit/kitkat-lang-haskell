@@ -3,9 +3,10 @@
 
 module ParserUtils (Parser, skip, lexeme, stringLex) where
 
+import Data.Data (Data (toConstr))
 import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, empty)
+import Text.Megaparsec (Parsec, Stream (Token), empty, satisfy)
 import Text.Megaparsec.Char (space1)
 import Text.Megaparsec.Char.Lexer qualified as L
 

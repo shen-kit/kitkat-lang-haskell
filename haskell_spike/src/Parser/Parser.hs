@@ -4,19 +4,12 @@ module Parser.Parser where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Void (Void)
-import Lexer.TokenTypes (Token (TBinOp, TInt))
-import Parser.ParserTypes
+import Lexer.TokenTypes
+import Parser.ParserTypes (BOp (..), Expr (..), Program (Program))
 import Text.Megaparsec (Parsec, many, satisfy)
 
 -- parser for a list of tokens
 type ParserT = Parsec Void [Token]
-
--- ==================== HELPERS ====================
-
--- returns a parser that matches a specific token
--- if the input is the same token, return the token, else fail
-isTok :: Token -> ParserT Token
-isTok t = satisfy (== t)
 
 -- ==================== PARSERS ====================
 
@@ -24,9 +17,6 @@ parseInt :: ParserT Expr
 parseInt = do
   TInt val <- satisfy isInt
   return $ EInt val
-  where
-    isInt (TInt _) = True
-    isInt _ = False
 
 opTable :: [[Operator ParserT Expr]]
 opTable =
@@ -34,7 +24,7 @@ opTable =
     [binL Plus "+", binL Minus "-"]
   ]
   where
-    binL opType opText = InfixL $ BinOp opType <$ isTok (TBinOp opText)
+    binL opType opText = InfixL $ EBinOp opType <$ isTok (TBinOp opText)
 
 pTerm :: ParserT Expr
 pTerm = parseInt
