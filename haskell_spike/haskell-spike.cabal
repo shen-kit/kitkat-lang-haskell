@@ -46,11 +46,6 @@ executable haskell-spike
 
     -- Other library packages from which modules are imported.
     build-depends:   base ^>=4.17.2.1
-                   , text
-                   , megaparsec
-                   , parser-combinators
-                   , mtl
-                   , llvm-hs-pure
 
     -- Directories containing source files.
     hs-source-dirs:   app
