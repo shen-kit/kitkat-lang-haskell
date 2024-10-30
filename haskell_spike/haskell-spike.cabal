@@ -26,15 +26,20 @@ library
       Parser.Parser
       Parser.SemantParser
       Midend.Codegen
+      LLVM.Pretty
+      LLVM.Pretty.Typed
     hs-source-dirs:  src
     default-extensions: OverloadedStrings
-    build-depends:   base ^>=4.17.2.1
-                   , text
-                   , megaparsec
-                   , parser-combinators
-                   , mtl
-                   , llvm-hs-pure
-                   , bytestring
+    build-depends:
+      base                ^>=4.17.2.1,
+      array                >= 0.5   && < 0.6,
+      bytestring,
+      llvm-hs-pure         >= 9.0   && < 10.0,
+      text,
+      prettyprinter        >= 1.2   && < 1.8,
+      megaparsec,
+      parser-combinators,
+      mtl
     default-language: Haskell2010
 
 
@@ -48,5 +53,4 @@ executable haskell-spike
                       , megaparsec
                       , llvm-hs-pure
                       , text
-                      , llvm-hs-pretty
     default-language: Haskell2010
