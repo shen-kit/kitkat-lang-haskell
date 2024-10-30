@@ -1,7 +1,8 @@
-module LLVM (
-  module LLVM.Typed,
-  module LLVM.Pretty
-) where
+module LLVM
+  ( module LLVM.Pretty.Typed,
+    module LLVM.Pretty,
+  )
+where
 
-import LLVM.Typed
 import LLVM.Pretty
+import LLVM.Pretty.Typed
