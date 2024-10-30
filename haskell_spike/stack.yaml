@@ -39,12 +39,8 @@ extra-deps:
   - llvm-hs-pure-9.0.0@sha256:10f655a15791a28cc53412ff9c7ce8245903da065d1dd3b981b33cfebd277693,3077
   - bytestring-0.11.2.0@sha256:54b422b695201aaa9f1f5592f83005b11c4d7032a1fbe8b3599610ea9d7270f3,7499
   - binary-0.8.9.2@sha256:03381e511429c44d13990c6d76281c4fc2468371cede4fe684b0c98d9b7d5f5a,6611
-  # - text-2.1.1@sha256:78c3fb91055d0607a80453327f087b9dc82168d41d0dca3ff410d21033b5e87d,10653
   - text-2.0.2@sha256:71b5fa8c64d3c1fd0a08f993463220867b08290a2256e94b0952bf0e8f5a45cc,9905
-# - acme-missiles-0.3
-# - git: https://github.com/commercialhaskell/stack.git
-#   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
-#
+  - llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
 # extra-deps: []
 
 # Override default flag values for project packages and extra-deps
