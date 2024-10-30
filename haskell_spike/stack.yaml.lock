@@ -3,7 +3,35 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: llvm-hs-pure-9.0.0@sha256:10f655a15791a28cc53412ff9c7ce8245903da065d1dd3b981b33cfebd277693,3077
+    pantry-tree:
+      sha256: 4ff5e17f1277fdc7c2a2d3ddd6a314847bbb4564d052fdc5115fb0a047133104
+      size: 2600
+  original:
+    hackage: llvm-hs-pure-9.0.0@sha256:10f655a15791a28cc53412ff9c7ce8245903da065d1dd3b981b33cfebd277693,3077
+- completed:
+    hackage: bytestring-0.11.2.0@sha256:54b422b695201aaa9f1f5592f83005b11c4d7032a1fbe8b3599610ea9d7270f3,7499
+    pantry-tree:
+      sha256: 1d47865a907fe934830cc835f626b908882dd4f7d2c3a9e8242ee9c1a2e295e8
+      size: 3748
+  original:
+    hackage: bytestring-0.11.2.0@sha256:54b422b695201aaa9f1f5592f83005b11c4d7032a1fbe8b3599610ea9d7270f3,7499
+- completed:
+    hackage: binary-0.8.9.2@sha256:03381e511429c44d13990c6d76281c4fc2468371cede4fe684b0c98d9b7d5f5a,6611
+    pantry-tree:
+      sha256: 7fac13c81b45416bd082c34e31cc3ac19226dd15354f379156922ad4cfbe6285
+      size: 1976
+  original:
+    hackage: binary-0.8.9.2@sha256:03381e511429c44d13990c6d76281c4fc2468371cede4fe684b0c98d9b7d5f5a,6611
+- completed:
+    hackage: text-2.0.2@sha256:71b5fa8c64d3c1fd0a08f993463220867b08290a2256e94b0952bf0e8f5a45cc,9905
+    pantry-tree:
+      sha256: 25f3b6dd211e30f9e0ef5047bb9f30df7a9296cf1043873e31558196dfe78676
+      size: 7514
+  original:
+    hackage: text-2.0.2@sha256:71b5fa8c64d3c1fd0a08f993463220867b08290a2256e94b0952bf0e8f5a45cc,9905
 snapshots:
 - completed:
     sha256: a81fb3877c4f9031e1325eb3935122e608d80715dc16b586eb11ddbff8671ecd
