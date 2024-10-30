@@ -7,6 +7,7 @@ import Text.Megaparsec (Parsec, satisfy)
 data Token
   = TInt Int
   | TBinOp Text
+  | Semi
   deriving (Show, Eq, Ord)
 
 -- helper type checks

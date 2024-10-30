@@ -17,6 +17,6 @@ data Statement = StmtExpr Expr | StmtBlock [Statement]
 data Type = TyInt
   deriving (Show, Eq, Ord)
 
--- a program is a list of bindings
-newtype Program = Program [Statement]
+-- root of the AST
+newtype Ast = Ast [Statement]
   deriving (Show, Eq)

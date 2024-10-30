@@ -2,7 +2,7 @@ module Parser.SemantParserTypes where
 
 import Control.Monad.Except
 import Control.Monad.State (State)
-import Parser.ParserTypes (BOp, Statement, Type)
+import Parser.ParserTypes (BOp, Type)
 
 type SExpr = (Type, SExpr')
 
@@ -14,7 +14,4 @@ data SStatement = SStmtExpr SExpr | SStmtBlock [SStatement]
 
 type SProgram = [SStatement]
 
-data SemantError = TypeError {expected :: [Type], got :: Type, errorLoc :: Statement}
-  deriving (Show)
-
-type Semant = ExceptT SemantError (State SProgram)
+type Semant = ExceptT String (State SProgram)

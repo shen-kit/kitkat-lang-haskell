@@ -3,12 +3,10 @@
 
 module Parser.SemantParser where
 
-import Control.Monad (unless, when)
 import Control.Monad.Except
 import Control.Monad.State (evalState)
-import Parser.Parser
-import Parser.ParserTypes (BOp (..), Expr (..), Program (Program), Statement (StmtBlock, StmtExpr), Type (..))
-import Parser.SemantParserTypes (SExpr, SExpr' (..), SProgram, SStatement (SStmtBlock, SStmtExpr), Semant, SemantError (TypeError))
+import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (StmtBlock, StmtExpr), Type (..))
+import Parser.SemantParserTypes (SExpr, SExpr' (..), SProgram, SStatement (SStmtBlock, SStmtExpr), Semant)
 
 -- converts expressions into semantic expressions using type inferencing
 -- also performs type-checking on operations
@@ -22,9 +20,9 @@ checkExpr expr = case expr of
           l'@(t1, _) <- checkExpr l
           r'@(t2, _) <- checkExpr r
           let sexpr = SBinOp op l' r'
-              assertTypeEq = unless (t1 == t2) $ throwError $ TypeError [t1] t2 (StmtExpr expr)
+              assertTypeEq = unless (t1 == t2) $ throwError "types not equal"
               checkNumeric = do
-                unless (isNum t1) $ throwError $ TypeError [TyInt] t1 (StmtExpr expr)
+                unless (isNum t1) $ throwError "expected numeric type"
                 pure (t1, SBinOp op l' r')
           case op of
             Plus -> case (t1, t2) of -- use this syntax when more types
@@ -45,9 +43,9 @@ checkStatement stmt = case stmt of
       flatten (StmtBlock s : xs) = flatten (s ++ xs)
       flatten (s : xs) = s : flatten xs
 
-checkProgram :: Program -> Either SemantError SProgram
+checkProgram :: Ast -> Either String SProgram
 checkProgram program = evalState (runExceptT (checkProgram' program)) []
   where
-    checkProgram' :: Program -> Semant SProgram
-    checkProgram' (Program stmts) = do
+    checkProgram' :: Ast -> Semant SProgram
+    checkProgram' (Ast stmts) = do
       mapM checkStatement stmts

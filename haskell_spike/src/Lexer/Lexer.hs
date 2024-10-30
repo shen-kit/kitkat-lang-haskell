@@ -43,5 +43,8 @@ pBinOp =
             <|> stringLex "%"
         )
 
+pSemi :: Parser Token
+pSemi = Semi <$ stringLex ";"
+
 lexer :: Parser [Token]
-lexer = many (choice [pBinOp, pInt]) <* eof
+lexer = many (choice [pBinOp, pInt, pSemi]) <* eof

@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parser.Parser where
+module Parser.Parser (pProgram) where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Void (Void)
 import Lexer.TokenTypes
-import Parser.ParserTypes (BOp (..), Expr (..), Program (Program), Statement (StmtExpr))
+import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (StmtExpr))
 import Text.Megaparsec (Parsec, many, satisfy)
 
 -- parser for a list of tokens
@@ -33,7 +33,7 @@ pExpr :: ParserT Expr
 pExpr = makeExprParser pTerm opTable
 
 pStmt :: ParserT Statement
-pStmt = StmtExpr <$> pExpr
+pStmt = StmtExpr <$> pExpr <* isTok Semi
 
-pProgram :: ParserT Program
-pProgram = Program <$> many pStmt
+pProgram :: ParserT Ast
+pProgram = Ast <$> many pStmt
