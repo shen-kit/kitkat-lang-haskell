@@ -59,6 +59,7 @@ library
                    , text
                    , megaparsec
                    , parser-combinators
+                   , mtl
     default-language: Haskell2010
 
 
@@ -80,6 +81,7 @@ executable haskell-spike
                    , text
                    , megaparsec
                    , parser-combinators
+                   , mtl
 
     -- Directories containing source files.
     hs-source-dirs:   app

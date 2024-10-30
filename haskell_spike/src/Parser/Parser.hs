@@ -5,7 +5,7 @@ module Parser.Parser where
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Void (Void)
 import Lexer.TokenTypes
-import Parser.ParserTypes (BOp (..), Expr (..), Program (Program))
+import Parser.ParserTypes (BOp (..), Expr (..), Program (Program), Statement (StmtExpr))
 import Text.Megaparsec (Parsec, many, satisfy)
 
 -- parser for a list of tokens
@@ -32,5 +32,8 @@ pTerm = parseInt
 pExpr :: ParserT Expr
 pExpr = makeExprParser pTerm opTable
 
+pStmt :: ParserT Statement
+pStmt = StmtExpr <$> pExpr
+
 pProgram :: ParserT Program
-pProgram = Program <$> many pExpr
+pProgram = Program <$> many pStmt

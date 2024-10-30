@@ -18,4 +18,6 @@ main = do
     Left _ -> putStrLn "lexer err"
     Right tokens -> case parse pProgram "" tokens of
       Left _ -> putStrLn "parser err"
-      Right expr -> print expr
+      Right program -> case checkProgram program of
+        Left _ -> putStrLn "semant err"
+        Right sProgram -> print sProgram
