@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards, FlexibleInstances #-}
+{-# OPTIONS_GHC -w #-}
 
 -- TODO: remove this copy of the old "typeOf" implementation in llvm-hs-pure.
 -- It's needed because the new type signature of "typeOf" has a Monad constraint,

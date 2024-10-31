@@ -2,7 +2,6 @@ module Parser.SemantParserTypes where
 
 import Control.Monad.Except
 import Control.Monad.State (State)
-import Data.Text (Text)
 import Parser.ParserTypes (BOp, Type)
 
 type SExpr = (Type, SExpr')

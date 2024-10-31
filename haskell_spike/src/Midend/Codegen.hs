@@ -5,10 +5,7 @@ module Midend.Codegen (generateLLVM) where
 import Control.Monad.State (State, evalState, void)
 import Data.String (IsString (fromString))
 import LLVM.AST qualified as AST
-import LLVM.AST.Name
 import LLVM.IRBuilder qualified as L
-import LLVM.IRBuilder.Module qualified as L
-import LLVM.IRBuilder.Monad qualified as L
 import Parser.ParserTypes (BOp (..), Type (..))
 import Parser.SemantParserTypes (SExpr, SExpr' (..), SProgram, SStatement (..))
 

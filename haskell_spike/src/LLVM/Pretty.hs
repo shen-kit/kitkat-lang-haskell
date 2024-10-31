@@ -6,8 +6,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-{-# OPTIONS_GHC -fwarn-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -w #-}
+-- {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+-- {-# OPTIONS_GHC -fwarn-incomplete-uni-patterns #-}
 
 module LLVM.Pretty (
   ppllvm,
