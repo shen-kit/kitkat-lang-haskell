@@ -5,9 +5,12 @@ import Data.Void (Void)
 import Text.Megaparsec (Parsec, satisfy)
 
 data Token
-  = TInt Int
+  = TInt Integer
   | TBinOp Text
-  | Semi
+  | TKeyword Text
+  | TLParen
+  | TRParen
+  | TSemi
   deriving (Show, Eq, Ord)
 
 -- helper type checks

@@ -2,6 +2,7 @@
 
 module Parser.Parser (pProgram) where
 
+import Control.Applicative ((<|>))
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.Void (Void)
 import Lexer.TokenTypes
@@ -20,7 +21,7 @@ parseInt = do
 
 opTable :: [[Operator ParserT Expr]]
 opTable =
-  [ [binL Multiply "*", binL Divide "/", binL Modulus "%"],
+  [ [binL Multiply "*", binL Divide "/"],
     [binL Plus "+", binL Minus "-"]
   ]
   where
@@ -29,11 +30,19 @@ opTable =
 pTerm :: ParserT Expr
 pTerm = parseInt
 
+pPrint :: ParserT Expr
+pPrint = do
+  isTok (TKeyword "print")
+  isTok TLParen
+  e <- pExpr
+  isTok TRParen
+  pure $ EPrint e
+
 pExpr :: ParserT Expr
 pExpr = makeExprParser pTerm opTable
 
 pStmt :: ParserT Statement
-pStmt = StmtExpr <$> pExpr <* isTok Semi
+pStmt = StmtExpr <$> (pPrint <|> pExpr) <* isTok TSemi
 
 pProgram :: ParserT Ast
 pProgram = Ast <$> many pStmt

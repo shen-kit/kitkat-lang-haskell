@@ -30,7 +30,10 @@ checkExpr expr = case expr of
             Minus -> assertTypeEq >> checkNumeric
             Multiply -> assertTypeEq >> checkNumeric
             Divide -> assertTypeEq >> checkNumeric
-            Modulus -> assertTypeEq >> checkNumeric
+  EPrint inner -> do
+    inner'@(t, _) <- checkExpr inner
+    case t of
+      TyInt -> pure (TyVoid, SPrint inner')
 
 checkStatement :: Statement -> Semant SStatement
 checkStatement stmt = case stmt of

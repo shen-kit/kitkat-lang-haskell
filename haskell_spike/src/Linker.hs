@@ -18,5 +18,5 @@ compile llvmModule outfile = do
   withCurrentDirectory "build" $ do
     let llvmText = ppllvm llvmModule
     T.writeFile (outfile ++ ".ll") (toStrict llvmText)
-    callProcess "llc" [outfile ++ ".ll", "-o", outfile ++ ".s"]
-    callProcess "gcc" [outfile ++ ".s", "-o", outfile]
+    callProcess "llc" ["-filetype=obj", outfile ++ ".ll", "-o", outfile ++ ".o"]
+    callProcess "gcc" [outfile ++ ".o", "-o", outfile, "-lc"]

@@ -6,7 +6,10 @@ import Parser.ParserTypes (BOp, Type)
 
 type SExpr = (Type, SExpr')
 
-data SExpr' = SInt Int | SBinOp BOp SExpr SExpr
+data SExpr'
+  = SInt Integer
+  | SBinOp BOp SExpr SExpr
+  | SPrint SExpr
   deriving (Show, Eq)
 
 data SStatement = SStmtExpr SExpr | SStmtBlock [SStatement]

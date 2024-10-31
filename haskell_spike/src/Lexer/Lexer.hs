@@ -5,6 +5,8 @@ module Lexer.Lexer where
 
 import Data.Text (Text)
 import Data.Void (Void)
+import Foreign (plusPtr)
+import GHC.Float (plusDouble)
 import Lexer.TokenTypes (Token (..))
 import Text.Megaparsec hiding (Token)
 import Text.Megaparsec.Char (space1)
@@ -43,8 +45,16 @@ pBinOp =
             <|> stringLex "%"
         )
 
-pSemi :: Parser Token
-pSemi = Semi <$ stringLex ";"
+pKeyword :: Parser Token
+pKeyword = TKeyword <$> stringLex "print"
+
+pSymbol :: Parser Token
+pSymbol = pLParen <|> pRParen <|> pSemi
+  where
+    pLParen, pRParen, pSemi :: Parser Token
+    pSemi = TSemi <$ stringLex ";"
+    pLParen = TLParen <$ stringLex "("
+    pRParen = TRParen <$ stringLex ")"
 
 lexer :: Parser [Token]
-lexer = many (choice [pBinOp, pInt, pSemi]) <* eof
+lexer = many (choice [pBinOp, pInt, pSymbol, pKeyword]) <* eof
