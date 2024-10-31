@@ -39,11 +39,12 @@ codegenSexpr fmtOp (t, SBinOp op l r) = do
     Multiply -> case t of
       TyInt -> L.mul l' r'
     Divide -> case t of
-      TyInt -> L.mul l' r'
+      TyInt -> L.sdiv l' r'
 codegenSexpr fmtOp (_, SPrint inner) =
   case inner of
-    (TyInt, SInt i) -> do
-      call printfDecl [(fmtOp, []), (int32 i, [])]
+    (TyInt, exp) -> do
+      exp' <- codegenSexpr fmtOp inner
+      call printfDecl [(fmtOp, []), (exp', [])]
 
 codegenStatement :: AST.Operand -> SStatement -> Codegen ()
 codegenStatement fmtOp (SStmtExpr e) = void $ codegenSexpr fmtOp e
