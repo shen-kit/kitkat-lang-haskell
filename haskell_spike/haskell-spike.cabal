@@ -29,6 +29,7 @@ library
       Parser.SemantParser
       Parser.SemantParserTypes
       Midend.Codegen
+      Midend.Helpers
       Linker
       LLVM.Pretty
       LLVM.Pretty.Typed

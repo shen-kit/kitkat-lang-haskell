@@ -2,13 +2,11 @@
 
 module Linker (compile) where
 
-import Control.Exception (bracket)
 import Data.Text.IO qualified as T
 import Data.Text.Lazy
 import LLVM.AST
 import LLVM.Pretty (ppllvm)
 import System.Directory
-import System.Posix.Temp
 import System.Process
 
 -- generates an executable from a module at a given path

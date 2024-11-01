@@ -15,7 +15,9 @@ data Statement = StmtExpr Expr | StmtBlock [Statement]
   deriving (Show, Eq, Ord)
 
 -- types that an expression can return (e.g. addition of integers has type int)
-data Type = TyInt | TyVoid
+data Type
+  = TyInt
+  | TyNull
   deriving (Show, Eq, Ord)
 
 -- root of the AST

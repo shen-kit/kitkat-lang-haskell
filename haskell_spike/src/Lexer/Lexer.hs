@@ -5,8 +5,6 @@ module Lexer.Lexer where
 
 import Data.Text (Text)
 import Data.Void (Void)
-import Foreign (plusPtr)
-import GHC.Float (plusDouble)
 import Lexer.TokenTypes (Token (..))
 import Text.Megaparsec hiding (Token)
 import Text.Megaparsec.Char (space1)

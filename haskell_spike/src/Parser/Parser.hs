@@ -32,10 +32,10 @@ pTerm = parseInt
 
 pPrint :: ParserT Expr
 pPrint = do
-  isTok (TKeyword "print")
-  isTok TLParen
+  _ <- isTok (TKeyword "print")
+  _ <- isTok TLParen
   e <- pExpr
-  isTok TRParen
+  _ <- isTok TRParen
   pure $ EPrint e
 
 pExpr :: ParserT Expr

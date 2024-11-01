@@ -1,105 +1,69 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# OPTIONS_GHC -Wno-missing-fields #-}
 
 module Midend.Codegen (generateLLVM) where
 
-import Control.Monad.State (State, evalState, void)
-import Data.Functor.Identity (Identity)
-import Data.String (IsString (fromString))
-import GHC.Float (properFractionFloat)
-import LLVM.AST (Definition)
+import Control.Monad.State (void)
 import LLVM.AST qualified as AST
-import LLVM.AST.CallingConvention (CallingConvention (C))
-import LLVM.AST.Constant (Constant (Array, GlobalReference, Int))
-import LLVM.AST.Global
-import LLVM.AST.Linkage
-import LLVM.AST.Type as AST hiding (void)
-import LLVM.AST.Visibility
-import LLVM.IRBuilder (call)
-import LLVM.IRBuilder qualified as AST
-import LLVM.IRBuilder qualified as L
-import LLVM.IRBuilder.Constant
-import LLVM.IRBuilder.Instruction (globalStringPtr)
+import LLVM.AST.AddrSpace (AddrSpace (AddrSpace))
+import LLVM.AST.Global (Global (..))
+import LLVM.AST.Type (i32, i8, ptr)
+import LLVM.IRBuilder qualified as IR
+import Midend.Helpers
 import Parser.ParserTypes (BOp (..), Type (..))
 import Parser.SemantParserTypes (SExpr, SExpr' (..), SProgram, SStatement (..))
-import System.Process (proc)
 
-type Codegen = L.IRBuilderT Identity
+-- non-transformer version of `IR.IRBuilderT`
+type Builder = IR.IRBuilder
 
-codegenSexpr :: AST.Operand -> SExpr -> Codegen AST.Operand
-codegenSexpr fmtOp (TyInt, SInt i) = pure $ L.int32 (fromIntegral i)
-codegenSexpr fmtOp (t, SBinOp op l r) = do
-  l' <- codegenSexpr fmtOp l
-  r' <- codegenSexpr fmtOp r
+codegenSexpr :: SExpr -> Builder AST.Operand
+codegenSexpr (TyInt, SInt i) = pure $ IR.int32 i
+codegenSexpr (t, SBinOp op l r) = do
+  l' <- codegenSexpr l
+  r' <- codegenSexpr r
   case op of
-    Plus -> case (fst l, fst r) of
-      (TyInt, TyInt) -> L.add l' r'
-    Minus -> case (fst l, fst r) of
-      (TyInt, TyInt) -> L.sub l' r'
+    Plus -> case t of
+      TyInt -> IR.add l' r'
+    Minus -> case t of
+      TyInt -> IR.sub l' r'
     Multiply -> case t of
-      TyInt -> L.mul l' r'
+      TyInt -> IR.mul l' r'
     Divide -> case t of
-      TyInt -> L.sdiv l' r'
-codegenSexpr fmtOp (_, SPrint inner) =
+      TyInt -> IR.sdiv l' r'
+codegenSexpr (_, SPrint inner) =
   case inner of
-    (TyInt, exp) -> do
-      exp' <- codegenSexpr fmtOp inner
-      call printfDecl [(fmtOp, []), (exp', [])]
+    (TyInt, _) -> do
+      let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
+      exp' <- codegenSexpr inner
+      IR.call printfOp [(fmtOp, []), (exp', [])]
+    (TyNull, _) -> error "cannot print null value"
+codegenSexpr a = error $ "unrecognised expression" ++ show a
 
-codegenStatement :: AST.Operand -> SStatement -> Codegen ()
-codegenStatement fmtOp (SStmtExpr e) = void $ codegenSexpr fmtOp e
-codegenStatement fmtOp (SStmtBlock stmts) = mapM_ (codegenStatement fmtOp) stmts
+codegenStatement :: SStatement -> Builder ()
+codegenStatement (SStmtExpr e) = void $ codegenSexpr e
+codegenStatement (SStmtBlock stmts) = mapM_ codegenStatement stmts
 
-printfDecl :: AST.Operand
-printfDecl = AST.ConstantOperand $ GlobalReference (ptr (FunctionType i32 [ptr i8] True)) (AST.Name "printf")
-
-printfFunction :: Definition
-printfFunction =
+mainFunction :: SProgram -> AST.Definition
+mainFunction stmts =
   AST.GlobalDefinition $
-    Function
-      { name = AST.Name "printf",
-        linkage = External,
-        parameters = ([Parameter (ptr i8) (AST.Name "format") []], False),
-        returnType = i32,
-        basicBlocks = [],
-        visibility = Default,
-        callingConvention = C,
-        returnAttributes = [],
-        functionAttributes = [],
-        alignment = 0,
-        garbageCollectorName = Nothing,
-        personalityFunction = Nothing,
-        prefix = Nothing,
-        metadata = []
-      }
-
-mainFunction :: AST.Operand -> SProgram -> Definition
-mainFunction fmtOp stmts =
-  AST.GlobalDefinition $
-    Function
+    AST.functionDefaults
       { name = AST.Name "main",
         parameters = ([], False),
         returnType = i32,
-        basicBlocks = L.execIRBuilder L.emptyIRBuilder $ do
-          entry <- L.freshName "entry"
-          L.emitBlockStart entry
-          mapM_ (codegenStatement fmtOp) stmts
-          L.ret (int32 0),
-        linkage = External,
-        visibility = Default,
-        callingConvention = C,
-        returnAttributes = [],
-        functionAttributes = [],
-        alignment = 0,
-        garbageCollectorName = Nothing,
-        personalityFunction = Nothing,
-        prefix = Nothing,
-        metadata = []
+        basicBlocks = IR.execIRBuilder IR.emptyIRBuilder $ do
+          -- get unique name from suggestion
+          entry <- IR.freshName "entry"
+          -- defines the start of a new block with the given name ("entry")
+          IR.emitBlockStart entry
+          -- executes each `IRBuilder ()` sequentially, adds instructions to the basic block
+          mapM_ codegenStatement stmts
+          -- return 0 (function exit success)
+          IR.ret $ IR.int32 0
       }
 
 generateLLVM :: SProgram -> AST.Module
-generateLLVM prog = L.buildModule "myModule" $ do
-  L.emitDefn printfFunction
-  fmt <- globalStringPtr "%d\n" "fmt"
-  let fmtOperand = AST.ConstantOperand fmt
-  L.emitDefn (mainFunction fmtOperand prog)
+generateLLVM prog = IR.buildModule "myModule" $ do
+  IR.emitDefn printfDefn
+  IR.emitDefn $ makeStringVar "intFmt" "%d\n"
+  IR.emitDefn $ makeStringVar "floatFmt" "%f\n"
+  IR.emitDefn $ makeStringVar "strFmt" "%s\n"
+  IR.emitDefn $ mainFunction prog
