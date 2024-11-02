@@ -4,20 +4,20 @@ module Parser.Parser (parseProgram) where
 
 import Control.Applicative ((<|>))
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
-import Data.Either (lefts, rights)
 import Data.String (IsString (fromString))
 import Data.Void (Void)
 import Lexer.TokenTypes
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Text.Megaparsec (MonadParsec (label), Parsec, between, many, satisfy)
+import Text.Megaparsec (Parsec, many, satisfy)
 
 -- parser for a list of tokens
 type TokParser = Parsec Void [Token]
 
 -- ==================== PARSERS ====================
 
+-- end with EOF token -> fails if can't parse tokens into an AST
 parseProgram :: TokParser Ast
-parseProgram = Ast <$> many parseStmt
+parseProgram = Ast <$> many parseStmt <* isTok TEOF
 
 parseStmt :: TokParser Statement
 parseStmt = pStmt <* isTok TSemi

@@ -72,5 +72,10 @@ pSymbol = pLParen <|> pRParen <|> pSemi
     pLParen = TLParen <$ stringLex "("
     pRParen = TRParen <$ stringLex ")"
 
+pEof :: Parser Token
+pEof = TEOF <$ eof
+
 lexer :: Parser [Token]
-lexer = many (choice [pBinOp, pInt, pSymbol, pRWords, pIdent]) <* eof
+lexer = do
+  toks <- many $ choice [pBinOp, pInt, pSymbol, pRWords, pIdent]
+  pure $ toks ++ [TEOF]

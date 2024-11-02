@@ -12,6 +12,7 @@ data Token
   | TLParen
   | TRParen
   | TSemi
+  | TEOF
   deriving (Show, Eq, Ord)
 
 -- helper type checks
