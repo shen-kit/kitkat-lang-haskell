@@ -7,7 +7,8 @@ import Text.Megaparsec (Parsec, satisfy)
 data Token
   = TInt Integer
   | TBinOp Text
-  | TKeyword Text
+  | TRWord Text
+  | TIdent String -- annoying to convert all parsers to text, convert later
   | TLParen
   | TRParen
   | TSemi

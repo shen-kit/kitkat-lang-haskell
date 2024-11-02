@@ -7,7 +7,7 @@ import Data.Text (Text)
 import Data.Void (Void)
 import Lexer.TokenTypes (Token (..))
 import Text.Megaparsec hiding (Token)
-import Text.Megaparsec.Char (space1)
+import Text.Megaparsec.Char (alphaNumChar, space1, string, letterChar)
 import Text.Megaparsec.Char.Lexer qualified as L
 
 -- parser type that parses Text
@@ -31,7 +31,7 @@ stringLex = L.symbol skip
 
 -- parse a signed integer
 pInt :: Parser Token
-pInt = TInt <$> L.signed empty (lexeme L.decimal)
+pInt = TInt <$> L.signed empty (lexeme (L.decimal <* notFollowedBy letterChar))
 
 pBinOp :: Parser Token
 pBinOp =
@@ -41,10 +41,20 @@ pBinOp =
             <|> stringLex "*"
             <|> stringLex "/"
             <|> stringLex "%"
+            <|> stringLex "="
         )
 
-pKeyword :: Parser Token
-pKeyword = TKeyword <$> stringLex "print"
+-- parse a reserved word
+pRWords :: Parser Token
+pRWords = choice $ map pRWord rwords
+  where
+    pRWord :: Text -> Parser Token
+    pRWord word = TRWord <$> (lexeme . try) (string word <* notFollowedBy alphaNumChar)
+    rwords :: [Text]
+    rwords = ["print", "int", "const"]
+
+pIdent :: Parser Token
+pIdent = TIdent <$> lexeme ((:) <$> letterChar <*> many alphaNumChar)
 
 pSymbol :: Parser Token
 pSymbol = pLParen <|> pRParen <|> pSemi
@@ -55,4 +65,4 @@ pSymbol = pLParen <|> pRParen <|> pSemi
     pRParen = TRParen <$ stringLex ")"
 
 lexer :: Parser [Token]
-lexer = many (choice [pBinOp, pInt, pSymbol, pKeyword]) <* eof
+lexer = many (choice [pBinOp, pInt, pSymbol, pRWords, pIdent]) <* eof
