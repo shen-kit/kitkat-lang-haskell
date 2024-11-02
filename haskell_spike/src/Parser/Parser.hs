@@ -8,7 +8,7 @@ import Data.String (IsString (fromString))
 import Data.Void (Void)
 import Lexer.TokenTypes
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Text.Megaparsec (Parsec, many, satisfy)
+import Text.Megaparsec (Parsec, between, choice, many, satisfy)
 
 -- parser for a list of tokens
 type TokParser = Parsec Void [Token]
@@ -36,7 +36,7 @@ opTable =
     binL opType opText = InfixL $ EBinOp opType <$ isTok (TBinOp opText)
 
 pTerm :: TokParser Expr
-pTerm = parseInt <|> parseIdent
+pTerm = choice [parseInt, parseIdent, parseBrackets]
   where
     parseInt, parseIdent :: TokParser Expr
     parseInt = do
@@ -45,6 +45,7 @@ pTerm = parseInt <|> parseIdent
     parseIdent = do
       TIdent vname <- satisfy isIdent
       return $ EIdent $ fromString vname
+    parseBrackets = between (isTok TLParen) (isTok TRParen) pExpr
 
 -- TODO: desugar to be the same as any other function
 pPrint :: TokParser Expr
