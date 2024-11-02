@@ -2,6 +2,7 @@ module Parser.SemantParserTypes where
 
 import Control.Monad.Except
 import Control.Monad.State (State)
+import Data.Text (Text)
 import Parser.ParserTypes (BOp, Type)
 
 type SExpr = (Type, SExpr')
@@ -12,7 +13,11 @@ data SExpr'
   | SPrint SExpr
   deriving (Show, Eq)
 
-data SStatement = SStmtExpr SExpr | SStmtBlock [SStatement]
+-- statements don't have an intrinsic value
+data SStatement
+  = SStmtExpr SExpr
+  | SStmtBlock [SStatement]
+  | SStmtVarDecl Type Text SExpr
   deriving (Show, Eq)
 
 type SProgram = [SStatement]

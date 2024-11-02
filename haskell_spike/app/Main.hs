@@ -7,11 +7,11 @@ import Data.String (IsString (fromString))
 import Lexer.Lexer (lexer)
 import Lexer.TokenTypes (Token)
 import Midend.Codegen (generateLLVM)
-import Parser.Parser (pProgram)
+import Parser.Parser (parseProgram)
 import Parser.ParserTypes (Ast)
 import Parser.SemantParser (checkProgram)
 import Parser.SemantParserTypes (SProgram)
-import Text.Megaparsec (parse)
+import Text.Megaparsec (parse, errorBundlePretty)
 import Linker as Linker
 
 main :: IO ()
@@ -34,21 +34,21 @@ main = do
       contentsStr <- readFile infile
       let txt = fromString contentsStr
       case parse lexer "" txt of
-        Left _ -> error "lexer error"
+        Left err -> error $ errorBundlePretty err
         Right tokens -> pure tokens
 
     getAST :: FilePath -> IO Ast
     getAST infile = do
         tokens <- getTokens infile
-        case parse pProgram "" tokens of
-          Left _ -> error "parser error"
+        case parse parseProgram "" tokens of
+          Left err -> error $ show err
           Right ast -> pure ast
 
     getSAST :: FilePath -> IO SProgram
     getSAST infile = do
         ast <- getAST infile
         case checkProgram ast of
-          Left _ -> error "semant error"
+          Left err -> error $ show err
           Right sast -> pure sast
 
     compileFile :: FilePath -> IO ()

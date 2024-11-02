@@ -1,25 +1,33 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parser.Parser (pProgram) where
+module Parser.Parser (parseProgram) where
 
 import Control.Applicative ((<|>))
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
+import Data.Either (lefts, rights)
+import Data.String (IsString (fromString))
 import Data.Void (Void)
 import Lexer.TokenTypes
-import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (StmtExpr))
-import Text.Megaparsec (Parsec, many, satisfy)
+import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
+import Text.Megaparsec (MonadParsec (label), Parsec, between, many, satisfy)
 
 -- parser for a list of tokens
-type ParserT = Parsec Void [Token]
+type TokParser = Parsec Void [Token]
 
 -- ==================== PARSERS ====================
 
-parseInt :: ParserT Expr
-parseInt = do
-  TInt val <- satisfy isInt
-  return $ EInt val
+parseProgram :: TokParser Ast
+parseProgram = Ast <$> many parseStmt
 
-opTable :: [[Operator ParserT Expr]]
+parseStmt :: TokParser Statement
+parseStmt = pStmt <* isTok TSemi
+  where
+    pStmt :: TokParser Statement
+    pStmt =
+      pVarDecl
+        <|> StmtExpr <$> (pPrint <|> pExpr)
+
+opTable :: [[Operator TokParser Expr]]
 opTable =
   [ [binL Multiply "*", binL Divide "/"],
     [binL Plus "+", binL Minus "-"]
@@ -27,22 +35,41 @@ opTable =
   where
     binL opType opText = InfixL $ EBinOp opType <$ isTok (TBinOp opText)
 
-pTerm :: ParserT Expr
+pTerm :: TokParser Expr
 pTerm = parseInt
+  where
+    parseInt :: TokParser Expr
+    parseInt = do
+      TInt val <- satisfy isInt
+      return $ EInt val
 
-pPrint :: ParserT Expr
+-- TODO: desugar to be the same as any other function
+pPrint :: TokParser Expr
 pPrint = do
-  _ <- isTok (TKeyword "print")
+  _ <- isTok (TRWord "print")
   _ <- isTok TLParen
   e <- pExpr
   _ <- isTok TRParen
   pure $ EPrint e
 
-pExpr :: ParserT Expr
+pExpr :: TokParser Expr
 pExpr = makeExprParser pTerm opTable
 
-pStmt :: ParserT Statement
-pStmt = StmtExpr <$> (pPrint <|> pExpr) <* isTok TSemi
+-- parse bindings
 
-pProgram :: ParserT Ast
-pProgram = Ast <$> many pStmt
+pType :: TokParser Type
+pType =
+  TyInt <$ isTok (TRWord "int")
+    <|> TyNull <$ isTok (TRWord "null")
+
+pIdent :: TokParser Expr
+pIdent = do
+  TIdent name <- satisfy isIdent
+  pure $ EIdent $ fromString name
+
+pVarDecl :: TokParser Statement
+pVarDecl = do
+  vType <- pType
+  (EIdent ident) <- pIdent
+  value <- isTok (TBinOp "=") *> pExpr
+  pure $ StmtVarDecl vType ident value

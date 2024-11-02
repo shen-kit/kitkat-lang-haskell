@@ -28,3 +28,7 @@ isInt _ = False
 isBOp :: Token -> Bool
 isBOp (TBinOp {}) = True
 isBOp _ = False
+
+isIdent :: Token -> Bool
+isIdent (TIdent _) = True
+isIdent _ = False

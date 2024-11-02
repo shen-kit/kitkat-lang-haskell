@@ -1,11 +1,17 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+
 module Midend.Helpers (module Midend.Helpers) where
 
 import Data.ByteString.Short (ShortByteString)
+import Data.Kind qualified as AST
 import LLVM.AST
 import LLVM.AST.Constant (Constant (Array, GlobalReference, Int))
 import LLVM.AST.Global as G (Global (..))
 import LLVM.AST.Linkage (Linkage (External))
 import LLVM.AST.Type (i32, i8, ptr)
+import LLVM.IRBuilder (IRBuilder)
+import Parser.ParserTypes qualified as PTypes
+import Parser.SemantParserTypes (SExpr, SExpr' (SInt))
 
 -- =====================================================
 -- =                   MAKE GLOBALS                    =
@@ -57,3 +63,10 @@ getGlobalAsOp ty name' = ConstantOperand $ GlobalReference ty (Name name')
 -- get the printf function as an operand
 printfOp :: Operand
 printfOp = getGlobalAsOp (ptr (FunctionType i32 [ptr i8] True)) "printf"
+
+-- =====================================================
+-- =                     UTILITIES                     =
+-- =====================================================
+
+toLLVMType :: PTypes.Type -> Type
+toLLVMType PTypes.TyInt = i32
