@@ -36,12 +36,15 @@ opTable =
     binL opType opText = InfixL $ EBinOp opType <$ isTok (TBinOp opText)
 
 pTerm :: TokParser Expr
-pTerm = parseInt
+pTerm = parseInt <|> parseIdent
   where
-    parseInt :: TokParser Expr
+    parseInt, parseIdent :: TokParser Expr
     parseInt = do
       TInt val <- satisfy isInt
       return $ EInt val
+    parseIdent = do
+      TIdent vname <- satisfy isIdent
+      return $ EIdent $ fromString vname
 
 -- TODO: desugar to be the same as any other function
 pPrint :: TokParser Expr

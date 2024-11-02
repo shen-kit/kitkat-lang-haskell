@@ -18,7 +18,7 @@ main :: IO ()
 main = do
   -- putStr "infile: "
   -- infile <- getLine
-  let infile = "test.kitkat"
+  let infile = "test.kitkat" 
   putStr "select 1-2:\n1. print tokens\n2. print AST\n3. print SAST\n4. compile file\n: "
   choice <- getLine
   case choice of

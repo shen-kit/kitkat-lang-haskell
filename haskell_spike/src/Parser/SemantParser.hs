@@ -32,6 +32,8 @@ checkExpr (EBinOp op l r) =
           Minus -> assertTypeEq >> checkNumeric
           Multiply -> assertTypeEq >> checkNumeric
           Divide -> assertTypeEq >> checkNumeric
+-- TODO: store variable types and load from table
+checkExpr (EIdent vname) = pure (TyInt, SIdent vname)
 checkExpr (EPrint inner) = do
   inner'@(t, _) <- checkExpr inner
   case t of

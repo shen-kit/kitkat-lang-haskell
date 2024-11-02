@@ -11,6 +11,7 @@ data SExpr'
   = SInt Integer
   | SBinOp BOp SExpr SExpr
   | SPrint SExpr
+  | SIdent Text
   deriving (Show, Eq)
 
 -- statements don't have an intrinsic value
