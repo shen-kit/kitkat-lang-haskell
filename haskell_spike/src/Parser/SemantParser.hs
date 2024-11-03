@@ -3,9 +3,11 @@
 module Parser.SemantParser where
 
 import Control.Monad.Except
-import Control.Monad.State (evalState)
+import Control.Monad.State (evalState, gets, modify)
+import Data.Map as M
+import Data.Text (Text)
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), Semant)
+import Parser.SemantParserTypes (SAst (..), SExpr, SExpr' (..), SStatement (..), Semant)
 
 -- converts expressions into semantic expressions using type inferencing
 -- also performs type-checking on operations
@@ -25,18 +27,15 @@ checkExpr (EBinOp op l r) =
               unless (isNum t1) $ throwError "expected numeric type"
               pure (t1, sexpr)
         case op of
-          -- use this syntax when more types:
-          -- case (t1, t2) of
-          --   (TyInt, TyInt) -> pure (TyInt, sexpr)
-          --   (Ty1, Ty2) -> pure (..., sexpr)
           Plus -> assertTypeEq >> checkNumeric
           Minus -> assertTypeEq >> checkNumeric
           Multiply -> assertTypeEq >> checkNumeric
           Divide -> assertTypeEq >> checkNumeric
           -- only allow assignment if var & expr have the same type
           Assign -> assertTypeEq >> pure (t1, sexpr)
--- TODO: store variable types and load from table
-checkExpr (EIdent vname) = pure (TyInt, SIdent vname)
+checkExpr (EIdent vname) = do
+  vtype <- checkVarType vname
+  pure (vtype, SIdent vname)
 checkExpr (EPrint inner) = do
   inner'@(t, _) <- checkExpr inner
   case t of
@@ -55,15 +54,24 @@ checkStatement (StmtBlock exprs) = do
     flatten (s : xs) = s : flatten xs
 checkStatement (StmtVarDecl declType vName expr) = do
   expr'@(actualType, _) <- checkExpr expr
-  guard $ actualType == declType
+  when (actualType /= declType) $ throwError "assignment and expression types differ"
+  modify $ \s -> s {vars = M.insert vName actualType (vars s)}
   pure $ SStmtVarDecl declType vName expr'
+
+checkVarType :: Text -> Semant Type
+checkVarType varname = do
+  varTable <- gets vars
+  pure $ varTable M.! varname
 
 -- type-check the entire AST by type-checking each statement in it
 -- returns Either <error msg> <semantically-typed AST>
 checkProgram :: Ast -> Either String SAst
 checkProgram ast = evalState (runExceptT (checkProgram' ast)) initAst
   where
-    initAst = []
+    initAst = SAst {body = [], vars = M.empty}
     -- initAst = SAst {stmts = [], vars = M.empty}
     checkProgram' :: Ast -> Semant SAst
-    checkProgram' (Ast stmts) = mapM checkStatement stmts
+    checkProgram' (Ast stmts) = do
+      stmts' <- mapM checkStatement stmts
+      vars' <- gets vars
+      pure $ SAst {body = stmts', vars = vars'}

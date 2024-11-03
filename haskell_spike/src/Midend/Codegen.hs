@@ -11,7 +11,7 @@ import LLVM.AST.Type (i32, i8, ptr)
 import LLVM.IRBuilder qualified as IR
 import Midend.Helpers
 import Parser.ParserTypes (BOp (..), Type (..))
-import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..))
+import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), body)
 
 -- ========================================
 -- =                 TYPES                =
@@ -94,7 +94,7 @@ mainFunction program =
     generateMainFunc = do
       entry <- IR.freshName "entry"
       IR.emitBlockStart entry
-      mapM_ codegenStatement program
+      mapM_ codegenStatement (body program)
       IR.ret $ IR.int32 0
 
 -- generate the whole LLVM module from a semantically-typed AST

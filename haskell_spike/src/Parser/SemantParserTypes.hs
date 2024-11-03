@@ -23,6 +23,12 @@ data SStatement
   | SStmtVarDecl Type Text SExpr
   deriving (Show, Eq)
 
-type SAst = [SStatement]
+-- map var_name:var_type
+type Vars = M.Map Text Type
 
+-- a collection of statements and the existing bindings
+data SAst = SAst {body :: [SStatement], vars :: Vars}
+  deriving (Show, Eq)
+
+-- accumulate state to add statements and bindings
 type Semant = ExceptT String (State SAst)
