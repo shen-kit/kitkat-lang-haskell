@@ -35,12 +35,16 @@ codegenSexpr (t, SBinOp op l r) = do
   case op of
     Plus -> case t of
       TyInt -> IR.add l' r'
+      _ -> error $ "cannot add type: " ++ show t
     Minus -> case t of
       TyInt -> IR.sub l' r'
+      _ -> error $ "cannot add type: " ++ show t
     Multiply -> case t of
       TyInt -> IR.mul l' r'
+      _ -> error $ "cannot add type: " ++ show t
     Divide -> case t of
       TyInt -> IR.sdiv l' r'
+      _ -> error $ "cannot add type: " ++ show t
     Assign -> case l of
       (_, SIdent vname) -> do
         table <- lift get
@@ -67,6 +71,7 @@ codegenSexpr (_, SPrint inner) =
       exp' <- codegenSexpr inner
       IR.call printfOp [(fmtOp, []), (exp', [])]
     (TyNull, _) -> error "cannot print null value"
+codegenSexpr s = error $ "cannot generate LLVM IR code for the semantic expression: " ++ show s
 
 -- generate LLVM IR for a semantically-typed statement
 -- return nothing

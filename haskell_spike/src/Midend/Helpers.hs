@@ -3,15 +3,12 @@
 module Midend.Helpers (module Midend.Helpers) where
 
 import Data.ByteString.Short (ShortByteString)
-import Data.Kind qualified as AST
 import LLVM.AST
 import LLVM.AST.Constant (Constant (Array, GlobalReference, Int))
 import LLVM.AST.Global as G (Global (..))
 import LLVM.AST.Linkage (Linkage (External))
-import LLVM.AST.Type (i1, i32, i8, ptr)
-import LLVM.IRBuilder (IRBuilder)
+import LLVM.AST.Type (i1, i32, i8, ptr, void)
 import Parser.ParserTypes qualified as PTypes
-import Parser.SemantParserTypes (SExpr, SExpr' (SInt))
 
 -- =====================================================
 -- =                   MAKE GLOBALS                    =
@@ -71,3 +68,4 @@ printfOp = getGlobalAsOp (ptr (FunctionType i32 [ptr i8] True)) "printf"
 toLLVMType :: PTypes.Type -> Type
 toLLVMType PTypes.TyInt = i32
 toLLVMType PTypes.TyBool = i1
+toLLVMType PTypes.TyNull = void
