@@ -11,6 +11,7 @@ import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), Sema
 -- also performs type-checking on operations
 checkExpr :: Expr -> Semant SExpr
 checkExpr (EInt i) = pure (TyInt, SInt i)
+checkExpr (EBool b) = pure (TyBool, SBool b)
 checkExpr (EBinOp op l r) =
   let isNum t = case t of
         TyInt -> True
@@ -34,7 +35,6 @@ checkExpr (EBinOp op l r) =
           Divide -> assertTypeEq >> checkNumeric
           -- only allow assignment if var & expr have the same type
           Assign -> assertTypeEq >> pure (t1, sexpr)
-
 -- TODO: store variable types and load from table
 checkExpr (EIdent vname) = pure (TyInt, SIdent vname)
 checkExpr (EPrint inner) = do
@@ -61,8 +61,9 @@ checkStatement (StmtVarDecl declType vName expr) = do
 -- type-check the entire AST by type-checking each statement in it
 -- returns Either <error msg> <semantically-typed AST>
 checkProgram :: Ast -> Either String SAst
-checkProgram program = evalState (runExceptT (checkProgram' program)) []
+checkProgram ast = evalState (runExceptT (checkProgram' ast)) initAst
   where
+    initAst = []
+    -- initAst = SAst {stmts = [], vars = M.empty}
     checkProgram' :: Ast -> Semant SAst
-    checkProgram' (Ast stmts) = do
-      mapM checkStatement stmts
+    checkProgram' (Ast stmts) = mapM checkStatement stmts

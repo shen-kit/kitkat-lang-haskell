@@ -13,6 +13,7 @@ data BOp
 
 data Expr
   = EInt Integer
+  | EBool Bool
   | EBinOp BOp Expr Expr
   | EPrint Expr
   | EIdent Text
@@ -31,6 +32,7 @@ data Statement
 -- types that an expression can return (e.g. addition of integers has type int)
 data Type
   = TyInt
+  | TyBool
   | TyNull
   deriving (Show, Eq, Ord)
 

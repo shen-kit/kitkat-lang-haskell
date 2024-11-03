@@ -19,6 +19,7 @@ data Token
 
 -- returns a parser that matches a specific token (exactly)
 -- if the input is the same token, return the token, else fail
+
 isTok :: Token -> Parsec Void [Token] Token
 isTok t = satisfy (== t)
 
@@ -33,3 +34,8 @@ isBOp _ = False
 isIdent :: Token -> Bool
 isIdent (TIdent _) = True
 isIdent _ = False
+
+isBool :: Token -> Bool
+isBool (TRWord "true") = True
+isBool (TRWord "false") = True
+isBool _ = False

@@ -59,9 +59,13 @@ pRWords = choice $ map pRWord rwords
     rwords =
       [ -- types
         "int",
-        "null",
+        "bool",
         -- modifiers
         "const",
+        -- literals
+        "true",
+        "false",
+        "null",
         -- builtins
         "print"
       ]

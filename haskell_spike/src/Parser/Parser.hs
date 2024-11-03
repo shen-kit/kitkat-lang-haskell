@@ -38,16 +38,18 @@ opTable =
     binR opType opText = InfixR $ EBinOp opType <$ isTok (TBinOp opText)
 
 pTerm :: TokParser Expr
-pTerm = choice [parseInt, parseIdent, parseBrackets]
+pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool]
   where
-    parseInt, parseIdent :: TokParser Expr
     parseInt = do
       TInt val <- satisfy isInt
-      return $ EInt val
+      pure $ EInt val
     parseIdent = do
       TIdent vname <- satisfy isIdent
-      return $ EIdent $ fromString vname
+      pure $ EIdent $ fromString vname
     parseBrackets = between (isTok TLParen) (isTok TRParen) pExpr
+    parseBool = do
+      TRWord word <- satisfy isBool
+      pure $ EBool $ word == "true"
 
 -- TODO: desugar to be the same as any other function
 pPrint :: TokParser Expr
@@ -65,8 +67,11 @@ pExpr = makeExprParser pTerm opTable
 
 pType :: TokParser Type
 pType =
-  TyInt <$ isTok (TRWord "int")
-    <|> TyNull <$ isTok (TRWord "null")
+  choice
+    [ TyInt <$ isTok (TRWord "int"),
+      TyNull <$ isTok (TRWord "null"),
+      TyBool <$ isTok (TRWord "bool")
+    ]
 
 pIdent :: TokParser Expr
 pIdent = do

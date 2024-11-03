@@ -3,7 +3,7 @@
 module Midend.Codegen (generateLLVM) where
 
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, evalState, void, when)
-import Data.Map qualified as Map
+import Data.Map qualified as M
 import Data.Text (Text)
 import LLVM.AST qualified as AST
 import LLVM.AST.Global (Global (..))
@@ -18,7 +18,7 @@ import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..))
 -- ========================================
 
 -- map var_name: pointer
-type SymbolTable = Map.Map Text AST.Operand
+type SymbolTable = M.Map Text AST.Operand
 
 -- need state to maintain the symbol table
 type Builder = IR.IRBuilderT (State SymbolTable)
@@ -41,19 +41,17 @@ codegenSexpr (t, SBinOp op l r) = do
       TyInt -> IR.sdiv l' r'
     Assign -> case l of
       (_, SIdent vname) -> do
-        -- get the current SymbolTable from the inner monad
         table <- lift get
-        case Map.lookup vname table of
-          Just vPtr -> IR.store vPtr 0 r'
-          _ -> error "cannot assign variable as it hasn't been declared yet"
-        -- return the RHS expression value (for chaining expressions)
+        -- get the value (pointer) at key=vname, error if key doesn't exist
+        let vptr = table M.! vname
+        IR.store vptr 0 r'
         pure r'
-      _ -> error "LHS of assignment operator must have type SIdent"
+      _ -> error "assignment LHS must be of type SIdent"
 codegenSexpr (_, SIdent vname) = do
   table <- lift get
-  case Map.lookup vname table of
-    Just vPtr -> IR.load vPtr 0
-    Nothing -> error "undefined variable"
+  -- get the value (pointer) at key=vname, error if key doesn't exist
+  let vptr = table M.! vname
+  IR.load vptr 0
 codegenSexpr (_, SPrint inner) =
   case inner of
     (TyInt, _) -> do
@@ -71,13 +69,13 @@ codegenStatement (SStmtBlock stmts) = mapM_ codegenStatement stmts
 codegenStatement (SStmtVarDecl ty vName val) = void $ do
   -- get the table and validate variable not-yet declared
   table <- lift get
-  when (Map.member vName table) $ error "cannot re-declare existing variable."
+  when (M.member vName table) $ error "cannot re-declare existing variable."
   -- allocate space and store the value
   varPtr <- IR.alloca (toLLVMType ty) Nothing 0
   initVal <- codegenSexpr val
   IR.store varPtr 0 initVal
   -- put the vname:pointer pair into the table of the inner monad (State SymboLTable)
-  lift $ put $ Map.insert vName varPtr table
+  lift $ put $ M.insert vName varPtr table
 
 -- generate LLVM IR for the definition of the `main` function (runs when program starts)
 mainFunction :: SAst -> AST.Definition
@@ -88,7 +86,7 @@ mainFunction program =
         parameters = ([], False),
         returnType = i32,
         -- use execIRBuilderT to be in the same monadic context as codegenStatement
-        basicBlocks = evalState (IR.execIRBuilderT IR.emptyIRBuilder generateMainFunc) Map.empty
+        basicBlocks = evalState (IR.execIRBuilderT IR.emptyIRBuilder generateMainFunc) M.empty
       }
   where
     -- builder for [Basic Block], uses statements from the semantic AST
