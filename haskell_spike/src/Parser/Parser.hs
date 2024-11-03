@@ -8,7 +8,9 @@ import Data.String (IsString (fromString))
 import Data.Void (Void)
 import Lexer.TokenTypes
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Text.Megaparsec (Parsec, between, choice, many, satisfy)
+import Text.Megaparsec (MonadParsec (notFollowedBy, try), Parsec, between, choice, many, satisfy)
+import Text.Megaparsec.Byte.Lexer (lexeme, symbol)
+import Text.Megaparsec.Char (punctuationChar)
 
 -- parser for a list of tokens
 type TokParser = Parsec Void [Token]
@@ -31,12 +33,15 @@ opTable :: [[Operator TokParser Expr]]
 opTable =
   [ [binL Multiply "*", binL Divide "/"],
     [binL Plus "+", binL Minus "-"],
+    [binL Gt ">", binL Lt "<", binL Ge ">=", binL Le "<=", binL Eq "==", binL NEq "!="],
     [binL LAnd "&", binL LOr "|"],
     [binR Assign "="]
   ]
   where
-    binL opType opText = InfixL $ EBinOp opType <$ isTok (TBinOp opText)
-    binR opType opText = InfixR $ EBinOp opType <$ isTok (TBinOp opText)
+    binL opType sym = InfixL $ EBinOp opType <$ isTok (TBinOp sym)
+    -- for operators that are prefixes of other operators
+    -- binL' opType sym = InfixL $ EBinOp opType <$ operator sym
+    binR opType sym = InfixR $ EBinOp opType <$ isTok (TBinOp sym)
 
 pTerm :: TokParser Expr
 pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool]

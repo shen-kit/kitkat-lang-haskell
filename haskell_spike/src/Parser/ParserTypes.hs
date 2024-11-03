@@ -11,6 +11,12 @@ data BOp
   | Assign -- equals sign
   | LAnd -- logical AND
   | LOr -- logical OR
+  | Gt
+  | Lt
+  | Ge
+  | Le
+  | Eq
+  | NEq
   deriving (Show, Eq, Ord)
 
 data Expr

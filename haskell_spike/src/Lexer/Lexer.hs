@@ -38,10 +38,16 @@ lexer = do
 pInt :: Parser Token
 pInt = TInt <$> L.signed empty (lexeme (L.decimal <* notFollowedBy letterChar))
 
+-- parse a binary operator
+-- parse longest -> shortest operator symbols, to avoid early matching (e.g. "==" matching on first "=")
 pBinOp :: Parser Token
 pBinOp =
   TBinOp
-    <$> ( stringLex "+" -- add
+    <$> ( stringLex ">=" -- ge
+            <|> stringLex "<=" -- le
+            <|> stringLex "==" -- eq
+            <|> stringLex "!=" -- neq
+            <|> stringLex "+" -- add
             <|> stringLex "-" -- subtract
             <|> stringLex "*" -- multiply
             <|> stringLex "/" -- divide
@@ -49,6 +55,8 @@ pBinOp =
             <|> stringLex "=" -- assign
             <|> stringLex "&" -- logical AND
             <|> stringLex "|" -- logical OR
+            <|> stringLex ">" -- gt
+            <|> stringLex "<" -- lt
         )
 
 -- parse a reserved word

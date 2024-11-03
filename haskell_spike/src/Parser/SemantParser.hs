@@ -29,12 +29,23 @@ checkExpr (EBinOp op l r) =
             checkBool = do
               when (t1 /= TyBool) $ throwError "expected boolean type"
               pure (t1, sexpr)
+            makeComparator = do
+              assertTypeEq
+              unless (isNum t1) $ throwError "expected numeric type"
+              pure (TyBool, sexpr)
         case op of
           -- numeric operators
           Plus -> assertTypeEq >> checkNumeric
           Minus -> assertTypeEq >> checkNumeric
           Multiply -> assertTypeEq >> checkNumeric
           Divide -> assertTypeEq >> checkNumeric
+          -- numeric comparators
+          Lt -> makeComparator
+          Gt -> makeComparator
+          Le -> makeComparator
+          Ge -> makeComparator
+          Eq -> makeComparator
+          NEq -> makeComparator
           -- boolean operators
           LAnd -> assertTypeEq >> checkBool
           LOr -> assertTypeEq >> checkBool

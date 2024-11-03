@@ -7,6 +7,7 @@ import Data.Map qualified as M
 import Data.Text (Text)
 import LLVM.AST qualified as AST
 import LLVM.AST.Global (Global (..))
+import LLVM.AST.IntegerPredicate as IP
 import LLVM.AST.Type (i32, i8, ptr)
 import LLVM.IRBuilder qualified as IR
 import Midend.Helpers
@@ -53,6 +54,18 @@ codegenSexpr (t, SBinOp op l r) = do
         IR.store vptr 0 r'
         pure r'
       _ -> error "assignment LHS must be of type SIdent"
+    Lt -> case fst l of
+      TyInt -> IR.icmp IP.SLT l' r'
+    Gt -> case fst l of
+      TyInt -> IR.icmp IP.SGT l' r'
+    Le -> case fst l of
+      TyInt -> IR.icmp IP.SLE l' r'
+    Ge -> case fst l of
+      TyInt -> IR.icmp IP.SGE l' r'
+    Eq -> case fst l of
+      TyInt -> IR.icmp IP.EQ l' r'
+    NEq -> case fst l of
+      TyInt -> IR.icmp IP.NE l' r'
     LAnd -> IR.and l' r'
     LOr -> IR.or l' r'
 codegenSexpr (_, SIdent vname) = do
