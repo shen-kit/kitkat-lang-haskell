@@ -31,6 +31,7 @@ opTable :: [[Operator TokParser Expr]]
 opTable =
   [ [binL Multiply "*", binL Divide "/"],
     [binL Plus "+", binL Minus "-"],
+    [binL LAnd "&", binL LOr "|"],
     [binR Assign "="]
   ]
   where

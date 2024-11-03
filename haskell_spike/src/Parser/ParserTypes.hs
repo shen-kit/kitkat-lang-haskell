@@ -9,6 +9,8 @@ data BOp
   | Multiply
   | Divide
   | Assign -- equals sign
+  | LAnd -- logical AND
+  | LOr -- logical OR
   deriving (Show, Eq, Ord)
 
 data Expr

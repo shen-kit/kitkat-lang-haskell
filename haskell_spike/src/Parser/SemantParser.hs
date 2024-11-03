@@ -26,11 +26,18 @@ checkExpr (EBinOp op l r) =
             checkNumeric = do
               unless (isNum t1) $ throwError "expected numeric type"
               pure (t1, sexpr)
+            checkBool = do
+              when (t1 /= TyBool) $ throwError "expected boolean type"
+              pure (t1, sexpr)
         case op of
+          -- numeric operators
           Plus -> assertTypeEq >> checkNumeric
           Minus -> assertTypeEq >> checkNumeric
           Multiply -> assertTypeEq >> checkNumeric
           Divide -> assertTypeEq >> checkNumeric
+          -- boolean operators
+          LAnd -> assertTypeEq >> checkBool
+          LOr -> assertTypeEq >> checkBool
           -- only allow assignment if var & expr have the same type
           Assign -> assertTypeEq >> pure (t1, sexpr)
 checkExpr (EIdent vname) = do

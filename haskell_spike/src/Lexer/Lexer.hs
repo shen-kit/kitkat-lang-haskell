@@ -41,12 +41,14 @@ pInt = TInt <$> L.signed empty (lexeme (L.decimal <* notFollowedBy letterChar))
 pBinOp :: Parser Token
 pBinOp =
   TBinOp
-    <$> ( stringLex "+"
-            <|> stringLex "-"
-            <|> stringLex "*"
-            <|> stringLex "/"
-            <|> stringLex "%"
-            <|> stringLex "="
+    <$> ( stringLex "+" -- add
+            <|> stringLex "-" -- subtract
+            <|> stringLex "*" -- multiply
+            <|> stringLex "/" -- divide
+            <|> stringLex "%" -- modulus
+            <|> stringLex "=" -- assign
+            <|> stringLex "&" -- logical AND
+            <|> stringLex "|" -- logical OR
         )
 
 -- parse a reserved word

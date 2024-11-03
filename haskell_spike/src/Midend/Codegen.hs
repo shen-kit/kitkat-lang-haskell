@@ -53,6 +53,8 @@ codegenSexpr (t, SBinOp op l r) = do
         IR.store vptr 0 r'
         pure r'
       _ -> error "assignment LHS must be of type SIdent"
+    LAnd -> IR.and l' r'
+    LOr -> IR.or l' r'
 codegenSexpr (_, SIdent vname) = do
   table <- lift get
   -- get the value (pointer) at key=vname, error if key doesn't exist
