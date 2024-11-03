@@ -39,8 +39,8 @@ checkExpr (EIdent vname) = do
 checkExpr (EPrint inner) = do
   inner'@(t, _) <- checkExpr inner
   case t of
-    TyInt -> pure (TyNull, SPrint inner')
-    _ -> error $ "cannot print value: " ++ show inner
+    TyNull -> error $ "cannot print value: " ++ show inner
+    _ -> pure (TyNull, SPrint inner')
 
 -- type-check a statement node of the AST, return a typed statement node
 checkStatement :: Statement -> Semant SStatement

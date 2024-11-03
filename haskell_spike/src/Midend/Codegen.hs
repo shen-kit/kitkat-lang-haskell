@@ -27,6 +27,8 @@ type Builder = IR.IRBuilderT (State SymbolTable)
 -- return an LLVM Operand
 codegenSexpr :: SExpr -> Builder AST.Operand
 codegenSexpr (TyInt, SInt i) = pure $ IR.int32 i
+-- booleans represented as a bit (1 = true, 0 = false)
+codegenSexpr (TyBool, SBool b) = pure $ IR.bit (if b then 1 else 0)
 codegenSexpr (t, SBinOp op l r) = do
   l' <- codegenSexpr l
   r' <- codegenSexpr r
@@ -55,6 +57,11 @@ codegenSexpr (_, SIdent vname) = do
 codegenSexpr (_, SPrint inner) =
   case inner of
     (TyInt, _) -> do
+      -- get the "%d\n" global string variable
+      let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
+      exp' <- codegenSexpr inner
+      IR.call printfOp [(fmtOp, []), (exp', [])]
+    (TyBool, _) -> do
       -- get the "%d\n" global string variable
       let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
       exp' <- codegenSexpr inner
