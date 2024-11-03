@@ -5,7 +5,7 @@ module Parser.SemantParser where
 import Control.Monad.Except
 import Control.Monad.State (evalState)
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Parser.SemantParserTypes (SExpr, SExpr' (..), SProgram, SStatement (..), Semant)
+import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), Semant)
 
 -- converts expressions into semantic expressions using type inferencing
 -- also performs type-checking on operations
@@ -32,7 +32,8 @@ checkExpr (EBinOp op l r) =
           Minus -> assertTypeEq >> checkNumeric
           Multiply -> assertTypeEq >> checkNumeric
           Divide -> assertTypeEq >> checkNumeric
-          Assign -> assertTypeEq >> checkNumeric
+          -- only allow assignment if var & expr have the same type
+          Assign -> assertTypeEq >> pure (t1, sexpr)
 
 -- TODO: store variable types and load from table
 checkExpr (EIdent vname) = pure (TyInt, SIdent vname)
@@ -42,6 +43,7 @@ checkExpr (EPrint inner) = do
     TyInt -> pure (TyNull, SPrint inner')
     _ -> error $ "cannot print value: " ++ show inner
 
+-- type-check a statement node of the AST, return a typed statement node
 checkStatement :: Statement -> Semant SStatement
 checkStatement (StmtExpr e) = SStmtExpr <$> checkExpr e
 checkStatement (StmtBlock exprs) = do
@@ -56,9 +58,11 @@ checkStatement (StmtVarDecl declType vName expr) = do
   guard $ actualType == declType
   pure $ SStmtVarDecl declType vName expr'
 
-checkProgram :: Ast -> Either String SProgram
+-- type-check the entire AST by type-checking each statement in it
+-- returns Either <error msg> <semantically-typed AST>
+checkProgram :: Ast -> Either String SAst
 checkProgram program = evalState (runExceptT (checkProgram' program)) []
   where
-    checkProgram' :: Ast -> Semant SProgram
+    checkProgram' :: Ast -> Semant SAst
     checkProgram' (Ast stmts) = do
       mapM checkStatement stmts

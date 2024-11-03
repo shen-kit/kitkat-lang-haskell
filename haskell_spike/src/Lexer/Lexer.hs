@@ -31,7 +31,7 @@ stringLex = L.symbol skip
 
 lexer :: Parser [Token]
 lexer = do
-  toks <- skip *> (many $ choice [pBinOp, pInt, pSymbol, pRWords, pIdent]) <* eof
+  toks <- skip *> many (choice [pBinOp, pInt, pSymbol, pRWords, pIdent]) <* eof
   pure $ toks ++ [TEOF]
 
 -- parse a signed integer
@@ -76,6 +76,3 @@ pSymbol = pLParen <|> pRParen <|> pSemi
     pSemi = TSemi <$ stringLex ";"
     pLParen = TLParen <$ stringLex "("
     pRParen = TRParen <$ stringLex ")"
-
-pEof :: Parser Token
-pEof = TEOF <$ eof

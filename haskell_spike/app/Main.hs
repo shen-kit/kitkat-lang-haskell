@@ -10,7 +10,7 @@ import Midend.Codegen (generateLLVM)
 import Parser.Parser (parseProgram)
 import Parser.ParserTypes (Ast)
 import Parser.SemantParser (checkProgram)
-import Parser.SemantParserTypes (SProgram)
+import Parser.SemantParserTypes (SAst)
 import Text.Megaparsec (parse, errorBundlePretty)
 import Linker as Linker
 
@@ -44,7 +44,7 @@ main = do
           Left err -> error $ show err
           Right ast -> pure ast
 
-    getSAST :: FilePath -> IO SProgram
+    getSAST :: FilePath -> IO SAst
     getSAST infile = do
         ast <- getAST infile
         case checkProgram ast of

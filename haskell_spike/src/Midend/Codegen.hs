@@ -2,30 +2,29 @@
 
 module Midend.Codegen (generateLLVM) where
 
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, evalState, modify, void, when)
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, evalState, void, when)
 import Data.Map qualified as Map
 import Data.Text (Text)
-import Foreign (alloca)
 import LLVM.AST qualified as AST
-import LLVM.AST.AddrSpace (AddrSpace (AddrSpace))
 import LLVM.AST.Global (Global (..))
 import LLVM.AST.Type (i32, i8, ptr)
-import LLVM.IRBuilder (IRBuilderT (IRBuilderT))
 import LLVM.IRBuilder qualified as IR
 import Midend.Helpers
-import Parser.ParserTypes (BOp (..), Expr (EIdent), Type (..))
-import Parser.SemantParserTypes (SExpr, SExpr' (..), SProgram, SStatement (..))
+import Parser.ParserTypes (BOp (..), Type (..))
+import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..))
 
 -- ========================================
 -- =                 TYPES                =
 -- ========================================
 
--- map variable names to pointers
+-- map var_name: pointer
 type SymbolTable = Map.Map Text AST.Operand
 
 -- need state to maintain the symbol table
 type Builder = IR.IRBuilderT (State SymbolTable)
 
+-- generate LLVM IR for a semantically-typed expression
+-- return an LLVM Operand
 codegenSexpr :: SExpr -> Builder AST.Operand
 codegenSexpr (TyInt, SInt i) = pure $ IR.int32 i
 codegenSexpr (t, SBinOp op l r) = do
@@ -42,48 +41,57 @@ codegenSexpr (t, SBinOp op l r) = do
       TyInt -> IR.sdiv l' r'
     Assign -> case l of
       (_, SIdent vname) -> do
-        table <- lift get -- get the current SymbolTable from the inner monad
+        -- get the current SymbolTable from the inner monad
+        table <- lift get
         case Map.lookup vname table of
-          Just vPtr -> do
-            IR.store vPtr 0 r'
-            pure r'
-          _ -> error "could not assign variable as it hasn't been declared yet"
+          Just vPtr -> IR.store vPtr 0 r'
+          _ -> error "cannot assign variable as it hasn't been declared yet"
+        -- return the RHS expression value (for chaining expressions)
+        pure r'
       _ -> error "LHS of assignment operator must have type SIdent"
-codegenSexpr (_, SPrint inner) =
-  case inner of
-    (TyInt, _) -> do
-      let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
-      exp' <- codegenSexpr inner
-      IR.call printfOp [(fmtOp, []), (exp', [])]
-    (TyNull, _) -> error "cannot print null value"
 codegenSexpr (_, SIdent vname) = do
   table <- lift get
   case Map.lookup vname table of
     Just vPtr -> IR.load vPtr 0
     Nothing -> error "undefined variable"
+codegenSexpr (_, SPrint inner) =
+  case inner of
+    (TyInt, _) -> do
+      -- get the "%d\n" global string variable
+      let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
+      exp' <- codegenSexpr inner
+      IR.call printfOp [(fmtOp, []), (exp', [])]
+    (TyNull, _) -> error "cannot print null value"
 
+-- generate LLVM IR for a semantically-typed statement
+-- return nothing
 codegenStatement :: SStatement -> Builder ()
 codegenStatement (SStmtExpr e) = void $ codegenSexpr e
 codegenStatement (SStmtBlock stmts) = mapM_ codegenStatement stmts
 codegenStatement (SStmtVarDecl ty vName val) = void $ do
-  varPtr <- IR.alloca (toLLVMType ty) Nothing 0
+  -- get the table and validate variable not-yet declared
   table <- lift get
   when (Map.member vName table) $ error "cannot re-declare existing variable."
+  -- allocate space and store the value
+  varPtr <- IR.alloca (toLLVMType ty) Nothing 0
   initVal <- codegenSexpr val
   IR.store varPtr 0 initVal
+  -- put the vname:pointer pair into the table of the inner monad (State SymboLTable)
   lift $ put $ Map.insert vName varPtr table
 
-mainFunction :: SProgram -> AST.Definition
+-- generate LLVM IR for the definition of the `main` function (runs when program starts)
+mainFunction :: SAst -> AST.Definition
 mainFunction program =
   AST.GlobalDefinition $
     AST.functionDefaults
       { name = AST.Name "main",
         parameters = ([], False),
         returnType = i32,
-        -- use execIrBuilderT to be in the same monadic context as codegenStatement
+        -- use execIRBuilderT to be in the same monadic context as codegenStatement
         basicBlocks = evalState (IR.execIRBuilderT IR.emptyIRBuilder generateMainFunc) Map.empty
       }
   where
+    -- builder for [Basic Block], uses statements from the semantic AST
     generateMainFunc :: Builder ()
     generateMainFunc = do
       entry <- IR.freshName "entry"
@@ -91,8 +99,11 @@ mainFunction program =
       mapM_ codegenStatement program
       IR.ret $ IR.int32 0
 
-generateLLVM :: SProgram -> AST.Module
+-- generate the whole LLVM module from a semantically-typed AST
+generateLLVM :: SAst -> AST.Module
 generateLLVM program = IR.buildModule "myModule" $ do
+  -- define builtin globals
   IR.emitDefn printfDefn
   IR.emitDefn $ makeStringVar "intFmt" "%d\n"
+  -- define the main function
   IR.emitDefn $ mainFunction program

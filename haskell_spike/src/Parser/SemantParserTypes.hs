@@ -1,4 +1,4 @@
-module Parser.SemantParserTypes where
+module Parser.SemantParserTypes (module Parser.SemantParserTypes) where
 
 import Control.Monad.Except
 import Control.Monad.State (State)
@@ -21,6 +21,6 @@ data SStatement
   | SStmtVarDecl Type Text SExpr
   deriving (Show, Eq)
 
-type SProgram = [SStatement]
+type SAst = [SStatement]
 
-type Semant = ExceptT String (State SProgram)
+type Semant = ExceptT String (State SAst)
