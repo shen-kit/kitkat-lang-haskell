@@ -32,6 +32,8 @@ checkExpr (EBinOp op l r) =
           Minus -> assertTypeEq >> checkNumeric
           Multiply -> assertTypeEq >> checkNumeric
           Divide -> assertTypeEq >> checkNumeric
+          Assign -> assertTypeEq >> checkNumeric
+
 -- TODO: store variable types and load from table
 checkExpr (EIdent vname) = pure (TyInt, SIdent vname)
 checkExpr (EPrint inner) = do
@@ -43,16 +45,16 @@ checkExpr (EPrint inner) = do
 checkStatement :: Statement -> Semant SStatement
 checkStatement (StmtExpr e) = SStmtExpr <$> checkExpr e
 checkStatement (StmtBlock exprs) = do
-    let flattened = flatten exprs
-    SStmtBlock <$> mapM checkStatement flattened
-    where
-      flatten [] = []
-      flatten (StmtBlock s : xs) = flatten (s ++ xs)
-      flatten (s : xs) = s : flatten xs
+  let flattened = flatten exprs
+  SStmtBlock <$> mapM checkStatement flattened
+  where
+    flatten [] = []
+    flatten (StmtBlock s : xs) = flatten (s ++ xs)
+    flatten (s : xs) = s : flatten xs
 checkStatement (StmtVarDecl declType vName expr) = do
-    expr'@(actualType, sexpr') <- checkExpr expr
-    guard $ actualType == declType
-    pure $ SStmtVarDecl declType vName expr'
+  expr'@(actualType, _) <- checkExpr expr
+  guard $ actualType == declType
+  pure $ SStmtVarDecl declType vName expr'
 
 checkProgram :: Ast -> Either String SProgram
 checkProgram program = evalState (runExceptT (checkProgram' program)) []

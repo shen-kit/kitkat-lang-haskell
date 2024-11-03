@@ -30,10 +30,12 @@ parseStmt = pStmt <* isTok TSemi
 opTable :: [[Operator TokParser Expr]]
 opTable =
   [ [binL Multiply "*", binL Divide "/"],
-    [binL Plus "+", binL Minus "-"]
+    [binL Plus "+", binL Minus "-"],
+    [binR Assign "="]
   ]
   where
     binL opType opText = InfixL $ EBinOp opType <$ isTok (TBinOp opText)
+    binR opType opText = InfixR $ EBinOp opType <$ isTok (TBinOp opText)
 
 pTerm :: TokParser Expr
 pTerm = choice [parseInt, parseIdent, parseBrackets]

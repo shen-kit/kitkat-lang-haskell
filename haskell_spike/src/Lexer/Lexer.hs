@@ -1,7 +1,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lexer.Lexer where
+module Lexer.Lexer (lexer) where
 
 import Data.Text (Text)
 import Data.Void (Void)
@@ -28,6 +28,11 @@ stringLex :: Text -> Parser Text
 stringLex = L.symbol skip
 
 -- ====================  LITERAL PARSERS ====================
+
+lexer :: Parser [Token]
+lexer = do
+  toks <- skip *> (many $ choice [pBinOp, pInt, pSymbol, pRWords, pIdent]) <* eof
+  pure $ toks ++ [TEOF]
 
 -- parse a signed integer
 pInt :: Parser Token
@@ -74,8 +79,3 @@ pSymbol = pLParen <|> pRParen <|> pSemi
 
 pEof :: Parser Token
 pEof = TEOF <$ eof
-
-lexer :: Parser [Token]
-lexer = do
-  toks <- many $ choice [pBinOp, pInt, pSymbol, pRWords, pIdent]
-  pure $ toks ++ [TEOF]

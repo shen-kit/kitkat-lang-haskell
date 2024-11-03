@@ -2,7 +2,7 @@
 
 module Midend.Codegen (generateLLVM) where
 
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, evalState, modify, void)
+import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, evalState, modify, void, when)
 import Data.Map qualified as Map
 import Data.Text (Text)
 import Foreign (alloca)
@@ -13,7 +13,7 @@ import LLVM.AST.Type (i32, i8, ptr)
 import LLVM.IRBuilder (IRBuilderT (IRBuilderT))
 import LLVM.IRBuilder qualified as IR
 import Midend.Helpers
-import Parser.ParserTypes (BOp (..), Type (..))
+import Parser.ParserTypes (BOp (..), Expr (EIdent), Type (..))
 import Parser.SemantParserTypes (SExpr, SExpr' (..), SProgram, SStatement (..))
 
 -- ========================================
@@ -40,6 +40,15 @@ codegenSexpr (t, SBinOp op l r) = do
       TyInt -> IR.mul l' r'
     Divide -> case t of
       TyInt -> IR.sdiv l' r'
+    Assign -> case l of
+      (_, SIdent vname) -> do
+        table <- lift get -- get the current SymbolTable from the inner monad
+        case Map.lookup vname table of
+          Just vPtr -> do
+            IR.store vPtr 0 r'
+            pure r'
+          _ -> error "could not assign variable as it hasn't been declared yet"
+      _ -> error "LHS of assignment operator must have type SIdent"
 codegenSexpr (_, SPrint inner) =
   case inner of
     (TyInt, _) -> do
@@ -51,7 +60,7 @@ codegenSexpr (_, SIdent vname) = do
   table <- lift get
   case Map.lookup vname table of
     Just vPtr -> IR.load vPtr 0
-    Nothing -> error $ "undefined variable"
+    Nothing -> error "undefined variable"
 
 codegenStatement :: SStatement -> Builder ()
 codegenStatement (SStmtExpr e) = void $ codegenSexpr e
@@ -59,6 +68,7 @@ codegenStatement (SStmtBlock stmts) = mapM_ codegenStatement stmts
 codegenStatement (SStmtVarDecl ty vName val) = void $ do
   varPtr <- IR.alloca (toLLVMType ty) Nothing 0
   table <- lift get
+  when (Map.member vName table) $ error "cannot re-declare existing variable."
   initVal <- codegenSexpr val
   IR.store varPtr 0 initVal
   lift $ put $ Map.insert vName varPtr table

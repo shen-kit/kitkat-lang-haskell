@@ -8,14 +8,13 @@ data BOp
   | Minus
   | Multiply
   | Divide
-  | Eq -- var declaration + assignment
+  | Assign -- equals sign
   deriving (Show, Eq, Ord)
 
 data Expr
   = EInt Integer
   | EBinOp BOp Expr Expr
   | EPrint Expr
-  | EAssign VarName Expr -- assign variable
   | EIdent Text
   deriving (Show, Eq, Ord)
 
