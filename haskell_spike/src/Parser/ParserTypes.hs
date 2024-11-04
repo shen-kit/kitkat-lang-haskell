@@ -22,6 +22,7 @@ data BOp
 data Expr
   = EInt Integer
   | EBool Bool
+  | EString Text
   | EBinOp BOp Expr Expr
   | EPrint Expr
   | EIdent Text
@@ -43,6 +44,7 @@ data Statement
 data Type
   = TyInt
   | TyBool
+  | TyStr
   | TyNull
   deriving (Show, Eq, Ord)
 

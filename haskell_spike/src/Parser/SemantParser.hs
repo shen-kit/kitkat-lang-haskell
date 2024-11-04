@@ -14,6 +14,7 @@ import Parser.SemantParserTypes (SAst (..), SExpr, SExpr' (..), SStatement (..),
 checkExpr :: Expr -> Semant SExpr
 checkExpr (EInt i) = pure (TyInt, SInt i)
 checkExpr (EBool b) = pure (TyBool, SBool b)
+checkExpr (EString s) = pure (TyStr, SStr s)
 checkExpr (EBinOp op l r) =
   let isNum t = case t of
         TyInt -> True
@@ -81,11 +82,11 @@ checkStatement (StmtIf cond ifBody elseBody) = do
   ifBody' <- checkStatement ifBody
   elseBody' <- checkStatement elseBody
   pure $ SStmtIf cond' ifBody' elseBody'
-checkStatement (StmtWhile cond body) = do
+checkStatement (StmtWhile cond body') = do
   cond'@(condTy, _) <- checkExpr cond
   when (condTy /= TyBool) $ throwError "condition following 'if' must have type boolean"
-  body' <- checkStatement body
-  pure $ SStmtWhile cond' body'
+  sBody <- checkStatement body'
+  pure $ SStmtWhile cond' sBody
 
 checkVarType :: Text -> Semant Type
 checkVarType varname = do

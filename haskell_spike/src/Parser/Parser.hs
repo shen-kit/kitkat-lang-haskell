@@ -9,9 +9,7 @@ import Data.String (IsString (fromString))
 import Data.Void (Void)
 import Lexer.TokenTypes
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Text.Megaparsec (MonadParsec (notFollowedBy, try), Parsec, between, choice, many, option, satisfy)
-import Text.Megaparsec.Byte.Lexer (lexeme, symbol)
-import Text.Megaparsec.Char (punctuationChar)
+import Text.Megaparsec (Parsec, between, choice, many, option, satisfy)
 
 -- ==================== TYPES + HELPERS ====================
 
@@ -82,7 +80,7 @@ opTable =
     binR opType sym = InfixR $ EBinOp opType <$ isTok (TBinOp sym)
 
 pTerm :: TokParser Expr
-pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool]
+pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool, parseStr]
   where
     parseInt = do
       TInt val <- satisfy isInt
@@ -94,6 +92,9 @@ pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool]
     parseBool = do
       TRWord word <- satisfy isBool
       pure $ EBool $ word == "true"
+    parseStr = do
+      TString s <- satisfy isStr
+      pure $ EString s
 
 -- TODO: desugar to be the same as any other function
 pPrint :: TokParser Expr
@@ -112,7 +113,8 @@ pType =
   choice
     [ TyInt <$ isTok (TRWord "int"),
       TyNull <$ isTok (TRWord "null"),
-      TyBool <$ isTok (TRWord "bool")
+      TyBool <$ isTok (TRWord "bool"),
+      TyStr <$ isTok (TRWord "str")
     ]
 
 pIdent :: TokParser Expr

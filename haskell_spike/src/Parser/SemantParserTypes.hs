@@ -11,6 +11,7 @@ type SExpr = (Type, SExpr')
 data SExpr'
   = SInt Integer
   | SBool Bool
+  | SStr Text
   | SBinOp BOp SExpr SExpr
   | SPrint SExpr
   | SIdent Text

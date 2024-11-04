@@ -6,14 +6,17 @@ import Text.Megaparsec (Parsec, satisfy)
 
 data Token
   = TInt Integer
+  | TString Text
   | TBinOp Text
   | TRWord Text
   | TIdent String -- annoying to convert all parsers to text, convert later
-  | TLParen
-  | TRParen
-  | TLBrace
-  | TRBrace
-  | TSemi
+  | TLParen -- (
+  | TRParen -- )
+  | TLBrace -- {
+  | TRBrace -- }
+  | TSQuote -- '
+  | TDQuote -- "
+  | TSemi -- ;
   | TEOF
   deriving (Show, Eq, Ord)
 
@@ -41,3 +44,7 @@ isBool :: Token -> Bool
 isBool (TRWord "true") = True
 isBool (TRWord "false") = True
 isBool _ = False
+
+isStr :: Token -> Bool
+isStr (TString _) = True
+isStr _ = False

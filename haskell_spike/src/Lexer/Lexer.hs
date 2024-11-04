@@ -7,7 +7,7 @@ import Data.Text (Text)
 import Data.Void (Void)
 import Lexer.TokenTypes (Token (..))
 import Text.Megaparsec hiding (Token)
-import Text.Megaparsec.Char (alphaNumChar, letterChar, space1, string)
+import Text.Megaparsec.Char (alphaNumChar, char, letterChar, space1, string)
 import Text.Megaparsec.Char.Lexer qualified as L
 
 -- parser type that parses Text
@@ -33,12 +33,17 @@ stringLex = L.symbol skip
 -- creates a parser that generates a list of [Token] from Text
 lexer :: Parser [Token]
 lexer = do
-  toks <- skip *> many (choice [pBinOp, pInt, pSymbol, pRWords, pIdent]) <* eof
+  toks <- skip *> many (choice [pBinOp, pInt, pSymbol, pStr, pRWords, pIdent]) <* eof
   pure $ toks ++ [TEOF]
 
 -- parse a signed integer
 pInt :: Parser Token
 pInt = TInt <$> L.signed empty (lexeme (L.decimal <* notFollowedBy letterChar))
+
+-- parse all characters between a pair of double quotes
+-- allows strings to span multiple lines (includes '\n' character)
+pStr :: Parser Token
+pStr = TString <$> between (char '"') (char '"') (takeWhileP Nothing (/= '"'))
 
 -- parse a binary operator
 -- parse longest -> shortest operator symbols, to avoid early matching (e.g. "==" matching on first "=")
@@ -72,6 +77,7 @@ pRWords = choice $ map pRWord rwords
       [ -- types
         "int",
         "bool",
+        "str",
         -- modifiers
         "const",
         -- literals

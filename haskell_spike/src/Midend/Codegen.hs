@@ -1,14 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecursiveDo #-}
 
 module Midend.Codegen (generateLLVM) where
 
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, evalState, void, when)
+import Control.Monad.State (State, evalState, gets, modify, void, when)
 import Data.Map qualified as M
-import Data.Text (Text)
-import GHC.RTS.Flags qualified as IR
+import Data.Text (Text, unpack)
 import LLVM.AST qualified as AST
-import LLVM.AST.Global (Global (..))
 import LLVM.AST.IntegerPredicate as IP
 import LLVM.AST.Type (i32, i8, ptr)
 import LLVM.IRBuilder qualified as IR
@@ -20,11 +19,19 @@ import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), body
 -- =                 TYPES                =
 -- ========================================
 
--- map var_name: pointer
-type SymbolTable = M.Map Text AST.Operand
+-- strings => str_literal : pointer
+-- vars    => var_name    : pointer
+data Env = Env
+  { strings :: M.Map Text AST.Operand,
+    vars :: M.Map Text AST.Operand
+  }
+  deriving (Eq, Show)
 
--- need state to maintain the symbol table
-type Builder = IR.IRBuilderT (State SymbolTable)
+-- need state to maintain the already-declared variables and strings
+type LLVM = IR.ModuleBuilderT (State Env)
+
+-- IRBuilderT needs to include the ModuleBuilderT functionality for globalStringPtr to work
+type Builder = IR.IRBuilderT LLVM
 
 -- ============================================================
 -- =                EXPRESSION CODE-GENERATION                =
@@ -36,6 +43,17 @@ codegenSexpr :: SExpr -> Builder AST.Operand
 codegenSexpr (TyInt, SInt i) = pure $ IR.int32 i
 -- booleans represented as a bit (1 = true, 0 = false)
 codegenSexpr (TyBool, SBool b) = pure $ IR.bit (if b then 1 else 0)
+codegenSexpr (TyStr, SStr s) = do
+  strs <- gets strings
+  case M.lookup s strs of
+    -- create new global string variable
+    Just op -> pure op
+    Nothing -> do
+      let name' = AST.mkName $ "_str" <> show (M.size strs)
+      const' <- IR.globalStringPtr (unpack s) name'
+      let op = AST.ConstantOperand const'
+      modify $ \env -> env {strings = M.insert s op strs}
+      pure op
 codegenSexpr (t, SBinOp op l r) = do
   l' <- codegenSexpr l
   r' <- codegenSexpr r
@@ -54,7 +72,7 @@ codegenSexpr (t, SBinOp op l r) = do
       _ -> error $ "cannot add type: " ++ show t
     Assign -> case l of
       (_, SIdent vname) -> do
-        table <- lift get
+        table <- gets vars
         -- get the value (pointer) at key=vname, error if key doesn't exist
         let vptr = table M.! vname
         IR.store vptr 0 r'
@@ -62,20 +80,26 @@ codegenSexpr (t, SBinOp op l r) = do
       _ -> error "assignment LHS must be of type SIdent"
     Lt -> case fst l of
       TyInt -> IR.icmp IP.SLT l' r'
+      _ -> error "can only compare integers"
     Gt -> case fst l of
       TyInt -> IR.icmp IP.SGT l' r'
+      _ -> error "can only compare integers"
     Le -> case fst l of
       TyInt -> IR.icmp IP.SLE l' r'
+      _ -> error "can only compare integers"
     Ge -> case fst l of
       TyInt -> IR.icmp IP.SGE l' r'
+      _ -> error "can only compare integers"
     Eq -> case fst l of
       TyInt -> IR.icmp IP.EQ l' r'
+      _ -> error "can only compare integers"
     NEq -> case fst l of
       TyInt -> IR.icmp IP.NE l' r'
+      _ -> error "can only compare integers"
     LAnd -> IR.and l' r'
     LOr -> IR.or l' r'
 codegenSexpr (_, SIdent vname) = do
-  table <- lift get
+  table <- gets vars
   -- get the value (pointer) at key=vname, error if key doesn't exist
   let vptr = table M.! vname
   IR.load vptr 0
@@ -89,6 +113,10 @@ codegenSexpr (_, SPrint inner) =
     (TyBool, _) -> do
       -- get the "%d\n" global string variable
       let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
+      exp' <- codegenSexpr inner
+      IR.call printfOp [(fmtOp, []), (exp', [])]
+    (TyStr, _) -> do
+      let fmtOp = getGlobalAsOp (ptr i8) "strFmt"
       exp' <- codegenSexpr inner
       IR.call printfOp [(fmtOp, []), (exp', [])]
     (TyNull, _) -> error "cannot print null value"
@@ -105,14 +133,14 @@ codegenStatement (SStmtExpr e) = void $ codegenSexpr e
 codegenStatement (SStmtBlock stmts) = mapM_ codegenStatement stmts
 codegenStatement (SStmtVarDecl ty vName val) = void $ do
   -- get the table and validate variable not-yet declared
-  table <- lift get
+  table <- gets vars
   when (M.member vName table) $ error "cannot re-declare existing variable."
   -- allocate space and store the value
   varPtr <- IR.alloca (toLLVMType ty) Nothing 0
   initVal <- codegenSexpr val
   IR.store varPtr 0 initVal
-  -- put the vname:pointer pair into the table of the inner monad (State SymboLTable)
-  lift $ put $ M.insert vName varPtr table
+  -- put the vname:pointer pair into the vars table of the inner monad (State Env)
+  modify $ \env -> env {vars = M.insert vName varPtr (vars env)}
 
 -- generate code for if/else if/else blocks, using conditional branch
 codegenStatement (SStmtIf cond ifBody elseBody) = mdo
@@ -133,14 +161,14 @@ codegenStatement (SStmtIf cond ifBody elseBody) = mdo
   pure ()
 
 -- generate code for while loop using conditional branch
-codegenStatement (SStmtWhile cond body) = mdo
+codegenStatement (SStmtWhile cond body') = mdo
   -- check if condition is true the first time running
   cond' <- codegenSexpr cond
   IR.condBr cond' bodyBlock mergeBlock
 
   -- basic block for loop body
   bodyBlock <- IR.block `IR.named` "body"
-  codegenStatement body
+  codegenStatement body'
   continue <- codegenSexpr cond -- re-evaluate condition
   IR.condBr continue bodyBlock mergeBlock
 
@@ -152,35 +180,39 @@ codegenStatement (SStmtWhile cond body) = mdo
 -- =                 MAIN FUNC CODE-GENERATION                =
 -- ============================================================
 
--- generate LLVM IR for the definition of the `main` function (runs when program starts)
-mainFunction :: SAst -> AST.Definition
-mainFunction program =
-  AST.GlobalDefinition $
-    AST.functionDefaults
-      { name = AST.Name "main",
-        parameters = ([], False),
-        returnType = i32,
-        -- use execIRBuilderT to be in the same monadic context as codegenStatement
-        basicBlocks = evalState (IR.execIRBuilderT IR.emptyIRBuilder generateMainFunc) M.empty
-      }
+codegenMainFunc :: SAst -> LLVM ()
+codegenMainFunc sast = mdo
+  strs <- do
+    _ <- IR.function "main" [] i32 genBody
+    -- includes string literals defined in the function body just generated
+    gets strings
+  modify $ \env -> env {strings = strs}
   where
-    -- builder for [Basic Block], uses statements from the semantic AST
-    generateMainFunc :: Builder ()
-    generateMainFunc = do
+    genBody :: [AST.Operand] -> Builder ()
+    genBody _ = do
       entry <- IR.freshName "entry"
       IR.emitBlockStart entry
-      mapM_ codegenStatement (body program)
+      mapM_ codegenStatement (body sast)
       IR.ret $ IR.int32 0
 
 -- ============================================================
 -- =                  OVERALL CODE-GENERATION                 =
 -- ============================================================
 
--- generate the whole LLVM module from a semantically-typed AST
 generateLLVM :: SAst -> AST.Module
-generateLLVM program = IR.buildModule "myModule" $ do
-  -- define builtin globals
-  IR.emitDefn printfDefn
-  IR.emitDefn $ makeStringVar "intFmt" "%d\n"
-  -- define the main function
-  IR.emitDefn $ mainFunction program
+generateLLVM program =
+  flip evalState initState $
+    IR.buildModuleT "myModule" $ do
+      -- external variadic argument function definition
+      _ <- IR.externVarArgs (AST.mkName "printf") [ptr i8] i32
+      -- helper constants
+      declareGlobalStr "%s\n" "strFmt"
+      declareGlobalStr "%d\n" "intFmt"
+      codegenMainFunc program
+  where
+    initState = Env {vars = M.empty, strings = M.empty}
+
+    -- helper: declares global string variable and adds to the environment
+    declareGlobalStr str name' = do
+      vptr <- IR.globalStringPtr str name'
+      modify $ \env -> env {vars = M.insert "intFmt" (AST.ConstantOperand vptr) (vars env)}
