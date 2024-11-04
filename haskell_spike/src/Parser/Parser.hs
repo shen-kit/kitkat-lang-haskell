@@ -34,7 +34,8 @@ parseStmt =
     [ pExprStmt,
       pVarDecl,
       pBlock,
-      pIf
+      pIf,
+      pWhile
     ]
   where
     -- expression, terminated by semicolon
@@ -54,10 +55,17 @@ parseStmt =
     -- if <expr> <stmt>
     pIf = mdo
       _ <- isTok (TRWord "if")
-      expr <- pExpr
+      cond <- pExpr
       body <- parseStmt
       maybeElse <- option (StmtBlock []) (isTok (TRWord "else") *> parseStmt)
-      pure $ StmtIf expr body maybeElse
+      pure $ StmtIf cond body maybeElse
+
+    -- if <expr> <stmt>
+    pWhile = mdo
+      _ <- isTok (TRWord "while")
+      cond <- pExpr
+      body <- parseStmt
+      pure $ StmtWhile cond body
 
 opTable :: [[Operator TokParser Expr]]
 opTable =

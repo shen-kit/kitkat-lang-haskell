@@ -36,6 +36,7 @@ data Statement
   | StmtBlock [Statement]
   | StmtVarDecl Type Text Expr
   | StmtIf Expr Statement Statement -- <condition> <true_branch> <false_branch>
+  | StmtWhile Expr Statement -- <condition> <loop_body>
   deriving (Show, Eq, Ord)
 
 -- types that an expression can return (e.g. addition of integers has type int)

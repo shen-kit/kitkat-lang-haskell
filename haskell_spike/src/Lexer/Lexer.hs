@@ -80,8 +80,8 @@ pRWords = choice $ map pRWord rwords
         "null",
         -- control flow
         "if",
-        "elif",
         "else",
+        "while",
         -- builtins
         "print"
       ]

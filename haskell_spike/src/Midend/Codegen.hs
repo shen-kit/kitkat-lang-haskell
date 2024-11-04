@@ -6,6 +6,7 @@ module Midend.Codegen (generateLLVM) where
 import Control.Monad.State (MonadState (get, put), MonadTrans (lift), State, evalState, void, when)
 import Data.Map qualified as M
 import Data.Text (Text)
+import GHC.RTS.Flags qualified as IR
 import LLVM.AST qualified as AST
 import LLVM.AST.Global (Global (..))
 import LLVM.AST.IntegerPredicate as IP
@@ -24,6 +25,10 @@ type SymbolTable = M.Map Text AST.Operand
 
 -- need state to maintain the symbol table
 type Builder = IR.IRBuilderT (State SymbolTable)
+
+-- ============================================================
+-- =                EXPRESSION CODE-GENERATION                =
+-- ============================================================
 
 -- generate LLVM IR for a semantically-typed expression
 -- return an LLVM Operand
@@ -89,6 +94,10 @@ codegenSexpr (_, SPrint inner) =
     (TyNull, _) -> error "cannot print null value"
 codegenSexpr s = error $ "cannot generate LLVM IR code for the semantic expression: " ++ show s
 
+-- ============================================================
+-- =                 STATEMENT CODE-GENERATION                =
+-- ============================================================
+
 -- generate LLVM IR for a semantically-typed statement
 -- return nothing
 codegenStatement :: SStatement -> Builder ()
@@ -104,6 +113,8 @@ codegenStatement (SStmtVarDecl ty vName val) = void $ do
   IR.store varPtr 0 initVal
   -- put the vname:pointer pair into the table of the inner monad (State SymboLTable)
   lift $ put $ M.insert vName varPtr table
+
+-- generate code for if/else if/else blocks, using conditional branch
 codegenStatement (SStmtIf cond ifBody elseBody) = mdo
   cond' <- codegenSexpr cond
   IR.condBr cond' ifBlock elseBlock
@@ -120,6 +131,26 @@ codegenStatement (SStmtIf cond ifBody elseBody) = mdo
   -- both if/else return to the 'merge block' as each function can only have one return
   mergeBlock <- IR.block `IR.named` "merge"
   pure ()
+
+-- generate code for while loop using conditional branch
+codegenStatement (SStmtWhile cond body) = mdo
+  -- check if condition is true the first time running
+  cond' <- codegenSexpr cond
+  IR.condBr cond' bodyBlock mergeBlock
+
+  -- basic block for loop body
+  bodyBlock <- IR.block `IR.named` "body"
+  codegenStatement body
+  continue <- codegenSexpr cond -- re-evaluate condition
+  IR.condBr continue bodyBlock mergeBlock
+
+  -- termination block
+  mergeBlock <- IR.block `IR.named` "body"
+  pure ()
+
+-- ============================================================
+-- =                 MAIN FUNC CODE-GENERATION                =
+-- ============================================================
 
 -- generate LLVM IR for the definition of the `main` function (runs when program starts)
 mainFunction :: SAst -> AST.Definition
@@ -140,6 +171,10 @@ mainFunction program =
       IR.emitBlockStart entry
       mapM_ codegenStatement (body program)
       IR.ret $ IR.int32 0
+
+-- ============================================================
+-- =                  OVERALL CODE-GENERATION                 =
+-- ============================================================
 
 -- generate the whole LLVM module from a semantically-typed AST
 generateLLVM :: SAst -> AST.Module

@@ -22,6 +22,7 @@ data SStatement
   | SStmtBlock [SStatement]
   | SStmtVarDecl Type Text SExpr
   | SStmtIf SExpr SStatement SStatement -- <cond> <true_branch> <false_branch>
+  | SStmtWhile SExpr SStatement -- <cond> <body>
   deriving (Show, Eq)
 
 -- map var_name:var_type

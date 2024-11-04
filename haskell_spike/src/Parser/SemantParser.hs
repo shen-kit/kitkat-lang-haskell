@@ -81,6 +81,11 @@ checkStatement (StmtIf cond ifBody elseBody) = do
   ifBody' <- checkStatement ifBody
   elseBody' <- checkStatement elseBody
   pure $ SStmtIf cond' ifBody' elseBody'
+checkStatement (StmtWhile cond body) = do
+  cond'@(condTy, _) <- checkExpr cond
+  when (condTy /= TyBool) $ throwError "condition following 'if' must have type boolean"
+  body' <- checkStatement body
+  pure $ SStmtWhile cond' body'
 
 checkVarType :: Text -> Semant Type
 checkVarType varname = do
