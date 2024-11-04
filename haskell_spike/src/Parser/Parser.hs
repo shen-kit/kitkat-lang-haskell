@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecursiveDo #-}
 
 module Parser.Parser (parseProgram) where
 
@@ -8,7 +9,7 @@ import Data.String (IsString (fromString))
 import Data.Void (Void)
 import Lexer.TokenTypes
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Text.Megaparsec (MonadParsec (notFollowedBy, try), Parsec, between, choice, many, satisfy)
+import Text.Megaparsec (MonadParsec (notFollowedBy, try), Parsec, between, choice, many, option, satisfy)
 import Text.Megaparsec.Byte.Lexer (lexeme, symbol)
 import Text.Megaparsec.Char (punctuationChar)
 
@@ -51,10 +52,12 @@ parseStmt =
     pBlock = StmtBlock <$> between (isTok TLBrace) (isTok TRBrace) (many parseStmt)
 
     -- if <expr> <stmt>
-    pIf = do
+    pIf = mdo
       _ <- isTok (TRWord "if")
       expr <- pExpr
-      StmtIf expr <$> parseStmt
+      body <- parseStmt
+      maybeElse <- option (StmtBlock []) (isTok (TRWord "else") *> parseStmt)
+      pure $ StmtIf expr body maybeElse
 
 opTable :: [[Operator TokParser Expr]]
 opTable =

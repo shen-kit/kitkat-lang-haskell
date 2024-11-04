@@ -75,11 +75,12 @@ checkStatement (StmtVarDecl declType vName expr) = do
   when (actualType /= declType) $ throwError "assignment and expression types differ"
   modify $ \s -> s {vars = M.insert vName actualType (vars s)}
   pure $ SStmtVarDecl declType vName expr'
-checkStatement (StmtIf cond body) = do
+checkStatement (StmtIf cond ifBody elseBody) = do
   cond'@(condTy, _) <- checkExpr cond
   when (condTy /= TyBool) $ throwError "condition following 'if' must have type boolean"
-  body' <- checkStatement body
-  pure $ SStmtIf cond' body'
+  ifBody' <- checkStatement ifBody
+  elseBody' <- checkStatement elseBody
+  pure $ SStmtIf cond' ifBody' elseBody'
 
 checkVarType :: Text -> Semant Type
 checkVarType varname = do

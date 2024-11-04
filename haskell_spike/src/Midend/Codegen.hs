@@ -104,14 +104,18 @@ codegenStatement (SStmtVarDecl ty vName val) = void $ do
   IR.store varPtr 0 initVal
   -- put the vname:pointer pair into the table of the inner monad (State SymboLTable)
   lift $ put $ M.insert vName varPtr table
-codegenStatement (SStmtIf cond body) = mdo
+codegenStatement (SStmtIf cond ifBody elseBody) = mdo
   cond' <- codegenSexpr cond
-  IR.condBr cond' thenBlock mergeBlock
+  IR.condBr cond' ifBlock elseBlock
 
   -- generate BasicBlock for success condition
-  thenBlock <- IR.block `IR.named` "then"
-  codegenStatement body
-  IR.br mergeBlock -- goto mergeBlock
+  ifBlock <- IR.block `IR.named` "then"
+  codegenStatement ifBody
+  IR.br mergeBlock
+  -- generate BasicBlock for fail condition
+  elseBlock <- IR.block `IR.named` "else"
+  codegenStatement elseBody
+  IR.br mergeBlock
 
   -- both if/else return to the 'merge block' as each function can only have one return
   mergeBlock <- IR.block `IR.named` "merge"
