@@ -12,8 +12,14 @@ import Text.Megaparsec (MonadParsec (notFollowedBy, try), Parsec, between, choic
 import Text.Megaparsec.Byte.Lexer (lexeme, symbol)
 import Text.Megaparsec.Char (punctuationChar)
 
+-- ==================== TYPES + HELPERS ====================
+
 -- parser for a list of tokens
 type TokParser = Parsec Void [Token]
+
+-- parse a semicolon
+semi :: TokParser Token
+semi = isTok TSemi
 
 -- ==================== PARSERS ====================
 
@@ -22,12 +28,33 @@ parseProgram :: TokParser Ast
 parseProgram = Ast <$> many parseStmt <* isTok TEOF
 
 parseStmt :: TokParser Statement
-parseStmt = pStmt <* isTok TSemi
+parseStmt =
+  choice
+    [ pExprStmt,
+      pVarDecl,
+      pBlock,
+      pIf
+    ]
   where
-    pStmt :: TokParser Statement
-    pStmt =
-      pVarDecl
-        <|> StmtExpr <$> (pPrint <|> pExpr)
+    -- expression, terminated by semicolon
+    pExprStmt :: TokParser Statement
+    pExprStmt = StmtExpr <$> (pPrint <|> pExpr) <* semi
+
+    -- <type> <var_name> = <expr>;
+    pVarDecl = do
+      vType <- pType
+      (EIdent ident) <- pIdent
+      value <- isTok (TBinOp "=") *> pExpr <* semi
+      pure $ StmtVarDecl vType ident value
+
+    -- { [stmts] }
+    pBlock = StmtBlock <$> between (isTok TLBrace) (isTok TRBrace) (many parseStmt)
+
+    -- if <expr> <stmt>
+    pIf = do
+      _ <- isTok (TRWord "if")
+      expr <- pExpr
+      StmtIf expr <$> parseStmt
 
 opTable :: [[Operator TokParser Expr]]
 opTable =
@@ -69,8 +96,6 @@ pPrint = do
 pExpr :: TokParser Expr
 pExpr = makeExprParser pTerm opTable
 
--- parse bindings
-
 pType :: TokParser Type
 pType =
   choice
@@ -83,10 +108,3 @@ pIdent :: TokParser Expr
 pIdent = do
   TIdent name <- satisfy isIdent
   pure $ EIdent $ fromString name
-
-pVarDecl :: TokParser Statement
-pVarDecl = do
-  vType <- pType
-  (EIdent ident) <- pIdent
-  value <- isTok (TBinOp "=") *> pExpr
-  pure $ StmtVarDecl vType ident value

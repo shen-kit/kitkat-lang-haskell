@@ -21,6 +21,7 @@ data SStatement
   = SStmtExpr SExpr
   | SStmtBlock [SStatement]
   | SStmtVarDecl Type Text SExpr
+  | SStmtIf SExpr SStatement
   deriving (Show, Eq)
 
 -- map var_name:var_type

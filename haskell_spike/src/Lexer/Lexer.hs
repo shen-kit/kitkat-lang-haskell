@@ -29,6 +29,8 @@ stringLex = L.symbol skip
 
 -- ====================  LITERAL PARSERS ====================
 
+-- parse all tokens until EOF, then append an EOF token
+-- creates a parser that generates a list of [Token] from Text
 lexer :: Parser [Token]
 lexer = do
   toks <- skip *> many (choice [pBinOp, pInt, pSymbol, pRWords, pIdent]) <* eof
@@ -76,6 +78,10 @@ pRWords = choice $ map pRWord rwords
         "true",
         "false",
         "null",
+        -- control flow
+        "if",
+        "elif",
+        "else",
         -- builtins
         "print"
       ]
@@ -84,9 +90,10 @@ pIdent :: Parser Token
 pIdent = TIdent <$> lexeme ((:) <$> letterChar <*> many alphaNumChar)
 
 pSymbol :: Parser Token
-pSymbol = pLParen <|> pRParen <|> pSemi
+pSymbol = choice [pSemi, pLParen, pRParen, pLBrace, pRBrace]
   where
-    pLParen, pRParen, pSemi :: Parser Token
     pSemi = TSemi <$ stringLex ";"
     pLParen = TLParen <$ stringLex "("
     pRParen = TRParen <$ stringLex ")"
+    pLBrace = TLBrace <$ stringLex "{"
+    pRBrace = TRBrace <$ stringLex "}"

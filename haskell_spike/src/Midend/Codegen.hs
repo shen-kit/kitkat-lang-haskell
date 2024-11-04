@@ -1,4 +1,5 @@
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE RecursiveDo #-}
 
 module Midend.Codegen (generateLLVM) where
 
@@ -103,6 +104,18 @@ codegenStatement (SStmtVarDecl ty vName val) = void $ do
   IR.store varPtr 0 initVal
   -- put the vname:pointer pair into the table of the inner monad (State SymboLTable)
   lift $ put $ M.insert vName varPtr table
+codegenStatement (SStmtIf cond body) = mdo
+  cond' <- codegenSexpr cond
+  IR.condBr cond' thenBlock mergeBlock
+
+  -- generate BasicBlock for success condition
+  thenBlock <- IR.block `IR.named` "then"
+  codegenStatement body
+  IR.br mergeBlock -- goto mergeBlock
+
+  -- both if/else return to the 'merge block' as each function can only have one return
+  mergeBlock <- IR.block `IR.named` "merge"
+  pure ()
 
 -- generate LLVM IR for the definition of the `main` function (runs when program starts)
 mainFunction :: SAst -> AST.Definition

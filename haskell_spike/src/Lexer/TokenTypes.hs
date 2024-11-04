@@ -11,6 +11,8 @@ data Token
   | TIdent String -- annoying to convert all parsers to text, convert later
   | TLParen
   | TRParen
+  | TLBrace
+  | TRBrace
   | TSemi
   | TEOF
   deriving (Show, Eq, Ord)
