@@ -24,7 +24,7 @@ data Expr
   | EBool Bool
   | EString Text
   | EBinOp BOp Expr Expr
-  | EPrint Expr
+  | EPrint Bool Expr -- <add '\n'?> <to_print>
   | EIdent Text
   deriving (Show, Eq, Ord)
 

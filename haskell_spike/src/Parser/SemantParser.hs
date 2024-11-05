@@ -55,11 +55,11 @@ checkExpr (EBinOp op l r) =
 checkExpr (EIdent vname) = do
   vtype <- checkVarType vname
   pure (vtype, SIdent vname)
-checkExpr (EPrint inner) = do
+checkExpr (EPrint ln inner) = do
   inner'@(t, _) <- checkExpr inner
   case t of
     TyNull -> error $ "cannot print value: " ++ show inner
-    _ -> pure (TyNull, SPrint inner')
+    _ -> pure (TyNull, SPrint ln inner')
 
 -- type-check a statement node of the AST, return a typed statement node
 checkStatement :: Statement -> Semant SStatement

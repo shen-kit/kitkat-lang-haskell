@@ -89,7 +89,8 @@ pRWords = choice $ map pRWord rwords
         "else",
         "while",
         -- builtins
-        "print"
+        "print",
+        "println" -- add trailing '\n'
       ]
 
 pIdent :: Parser Token

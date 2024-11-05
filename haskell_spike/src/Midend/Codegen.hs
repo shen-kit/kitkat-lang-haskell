@@ -103,20 +103,23 @@ codegenSexpr (_, SIdent vname) = do
   -- get the value (pointer) at key=vname, error if key doesn't exist
   let vptr = table M.! vname
   IR.load vptr 0
-codegenSexpr (_, SPrint inner) =
+codegenSexpr (_, SPrint ln inner) =
   case inner of
     (TyInt, _) -> do
       -- get the "%d\n" global string variable
-      let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
+      let fmtName = if ln then "intFmtLn" else "intFmt"
+      let fmtOp = getGlobalAsOp (ptr i8) fmtName
       exp' <- codegenSexpr inner
       IR.call printfOp [(fmtOp, []), (exp', [])]
     (TyBool, _) -> do
       -- get the "%d\n" global string variable
-      let fmtOp = getGlobalAsOp (ptr i8) "intFmt"
+      let fmtName = if ln then "intFmtLn" else "intFmt"
+      let fmtOp = getGlobalAsOp (ptr i8) fmtName
       exp' <- codegenSexpr inner
       IR.call printfOp [(fmtOp, []), (exp', [])]
     (TyStr, _) -> do
-      let fmtOp = getGlobalAsOp (ptr i8) "strFmt"
+      let fmtName = if ln then "strFmtLn" else "strFmt"
+      let fmtOp = getGlobalAsOp (ptr i8) fmtName
       exp' <- codegenSexpr inner
       IR.call printfOp [(fmtOp, []), (exp', [])]
     (TyNull, _) -> error "cannot print null value"
@@ -206,8 +209,10 @@ generateLLVM program =
       -- external variadic argument function definition
       _ <- IR.externVarArgs (AST.mkName "printf") [ptr i8] i32
       -- helper constants
-      declareGlobalStr "%s\n" "strFmt"
-      declareGlobalStr "%d\n" "intFmt"
+      declareGlobalStr "%s" "strFmt"
+      declareGlobalStr "%s\n" "strFmtLn"
+      declareGlobalStr "%d" "intFmt"
+      declareGlobalStr "%d\n" "intFmtLn"
       codegenMainFunc program
   where
     initState = Env {vars = M.empty, strings = M.empty}

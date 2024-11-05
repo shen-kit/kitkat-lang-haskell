@@ -38,7 +38,7 @@ parseStmt =
   where
     -- expression, terminated by semicolon
     pExprStmt :: TokParser Statement
-    pExprStmt = StmtExpr <$> (pPrint <|> pExpr) <* semi
+    pExprStmt = StmtExpr <$> (pPrint <|> pPrintln <|> pExpr) <* semi
 
     -- <type> <var_name> = <expr>;
     pVarDecl = do
@@ -103,7 +103,15 @@ pPrint = do
   _ <- isTok TLParen
   e <- pExpr
   _ <- isTok TRParen
-  pure $ EPrint e
+  pure $ EPrint False e
+
+pPrintln :: TokParser Expr
+pPrintln = do
+  _ <- isTok (TRWord "println")
+  _ <- isTok TLParen
+  e <- pExpr
+  _ <- isTok TRParen
+  pure $ EPrint True e
 
 pExpr :: TokParser Expr
 pExpr = makeExprParser pTerm opTable
