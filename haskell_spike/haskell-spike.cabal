@@ -26,6 +26,7 @@ library main-lib
       Lexer.Inner
       Lexer.TokenTypes
       Parser.Parser
+      Parser.ParserInner
       Parser.ParserTypes
       Parser.SemantParser
       Parser.SemantParserTypes
