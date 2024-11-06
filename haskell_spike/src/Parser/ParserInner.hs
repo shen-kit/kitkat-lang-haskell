@@ -3,7 +3,6 @@
 
 module Parser.ParserInner  where
 
-import Control.Applicative ((<|>))
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.String (IsString (fromString))
 import Data.Void (Void)
@@ -38,7 +37,7 @@ parseStmt =
   where
     -- expression, terminated by semicolon
     pExprStmt :: TokParser Statement
-    pExprStmt = StmtExpr <$> (pPrint <|> pPrintln <|> pExpr) <* semi
+    pExprStmt = StmtExpr <$> pExpr <* semi
 
     -- <type> <var_name> = <expr>;
     pVarDecl = do
@@ -65,56 +64,57 @@ parseStmt =
       body <- parseStmt
       pure $ StmtWhile cond body
 
-opTable :: [[Operator TokParser Expr]]
-opTable =
-  [ [binL Multiply "*", binL Divide "/"],
-    [binL Plus "+", binL Minus "-"],
-    [binL Gt ">", binL Lt "<", binL Ge ">=", binL Le "<=", binL Eq "==", binL NEq "!="],
-    [binL LAnd "&", binL LOr "|"],
-    [binR Assign "="]
-  ]
-  where
-    binL opType sym = InfixL $ EBinOp opType <$ isTok (TBinOp sym)
-    -- for operators that are prefixes of other operators
-    -- binL' opType sym = InfixL $ EBinOp opType <$ operator sym
-    binR opType sym = InfixR $ EBinOp opType <$ isTok (TBinOp sym)
-
-pTerm :: TokParser Expr
-pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool, parseStr]
-  where
-    parseInt = do
-      TInt val <- satisfy isInt
-      pure $ EInt val
-    parseIdent = do
-      TIdent vname <- satisfy isIdent
-      pure $ EIdent $ fromString vname
-    parseBrackets = between (isTok TLParen) (isTok TRParen) pExpr
-    parseBool = do
-      TRWord word <- satisfy isBool
-      pure $ EBool $ word == "true"
-    parseStr = do
-      TString s <- satisfy isStr
-      pure $ EString s
-
--- TODO: desugar to be the same as any other function
-pPrint :: TokParser Expr
-pPrint = do
-  _ <- isTok (TRWord "print")
-  _ <- isTok TLParen
-  e <- pExpr
-  _ <- isTok TRParen
-  pure $ EPrint False e
-
-pPrintln :: TokParser Expr
-pPrintln = do
-  _ <- isTok (TRWord "println")
-  _ <- isTok TLParen
-  e <- pExpr
-  _ <- isTok TRParen
-  pure $ EPrint True e
 
 pExpr :: TokParser Expr
-pExpr = makeExprParser pTerm opTable
+pExpr = choice [makeExprParser pTerm opTable, pPrint, pPrintln, pIdent]
+  where
+    opTable :: [[Operator TokParser Expr]]
+    opTable =
+      [ [binL Multiply "*", binL Divide "/"],
+        [binL Plus "+", binL Minus "-"],
+        [binL Gt ">", binL Lt "<", binL Ge ">=", binL Le "<=", binL Eq "==", binL NEq "!="],
+        [binL LAnd "&", binL LOr "|"],
+        [binR Assign "="]
+      ]
+      where
+        binL opType sym = InfixL $ EBinOp opType <$ isTok (TBinOp sym)
+        -- for operators that are prefixes of other operators
+        -- binL' opType sym = InfixL $ EBinOp opType <$ operator sym
+        binR opType sym = InfixR $ EBinOp opType <$ isTok (TBinOp sym)
+
+    pTerm :: TokParser Expr
+    pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool, parseStr]
+      where
+        parseInt = do
+          TInt val <- satisfy isInt
+          pure $ EInt val
+        parseIdent = do
+          TIdent vname <- satisfy isIdent
+          pure $ EIdent $ fromString vname
+        parseBrackets = between (isTok TLParen) (isTok TRParen) pExpr
+        parseBool = do
+          TRWord word <- satisfy isBool
+          pure $ EBool $ word == "true"
+        parseStr = do
+          TString s <- satisfy isStr
+          pure $ EString s
+
+    -- TODO: desugar to be the same as any other function
+    pPrint :: TokParser Expr
+    pPrint = do
+      _ <- isTok (TRWord "print")
+      _ <- isTok TLParen
+      e <- pExpr
+      _ <- isTok TRParen
+      pure $ EPrint False e
+
+    pPrintln :: TokParser Expr
+    pPrintln = do
+      _ <- isTok (TRWord "println")
+      _ <- isTok TLParen
+      e <- pExpr
+      _ <- isTok TRParen
+      pure $ EPrint True e
 
 pType :: TokParser Type
 pType =
