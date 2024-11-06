@@ -68,6 +68,7 @@ tSymbol = TestList [tSemi, tLParen, tRParen, tLBrace, tRBrace]
     tLBrace = testEq pSymbol "{" $ TLBrace
     tRBrace = testEq pSymbol "}" $ TRBrace
 
+-- test parsing identifiers
 tIdent :: Test
 tIdent = TestList [tIdentLower, tIdentUpper, tIdentDigitPrefix, tIdentDigit]
  where
@@ -76,9 +77,9 @@ tIdent = TestList [tIdentLower, tIdentUpper, tIdentDigitPrefix, tIdentDigit]
   tIdentDigitPrefix = testFail pIdent "1invalid"
   tIdentDigit       = testEq pIdent "valid123Identifier" $ TIdent "valid123Identifier"
 
--- ============================================================
--- =                    INDIVIDUAL PARSERS                    = 
--- ============================================================
+-- ===========================================================
+-- =                       FULL PARSER                       = 
+-- ===========================================================
 
 -- test the lexer function (chaining lexers)
 tLexer :: Test
