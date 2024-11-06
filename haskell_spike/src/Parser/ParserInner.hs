@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
 
-module Parser.ParserInner  where
+module Parser.ParserInner where
 
 import Control.Monad.Combinators.Expr (Operator (..), makeExprParser)
 import Data.String (IsString (fromString))
@@ -65,7 +65,7 @@ parseStmt =
       pure $ StmtWhile cond body
 
 pExpr :: TokParser Expr
-pExpr = choice [makeExprParser pTerm opTable, pPrint, pPrintln, pIdent]
+pExpr = choice [makeExprParser pTerm opTable, pPrint, pIdent]
   where
     opTable :: [[Operator TokParser Expr]]
     opTable =
@@ -101,16 +101,9 @@ pExpr = choice [makeExprParser pTerm opTable, pPrint, pPrintln, pIdent]
       _ <- isTok (TRWord "print")
       _ <- isTok TLParen
       e <- pExpr
+      maybeEnd <- option (EBool True) $ isTok TComma *> pExpr
       _ <- isTok TRParen
-      pure $ EPrint False e
-
-    pPrintln :: TokParser Expr
-    pPrintln = do
-      _ <- isTok (TRWord "println")
-      _ <- isTok TLParen
-      e <- pExpr
-      _ <- isTok TRParen
-      pure $ EPrint True e
+      pure $ EPrint maybeEnd e
 
 pType :: TokParser Type
 pType =

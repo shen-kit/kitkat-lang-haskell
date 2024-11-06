@@ -103,7 +103,7 @@ codegenSexpr (_, SIdent vname) = do
   -- get the value (pointer) at key=vname, error if key doesn't exist
   let vptr = table M.! vname
   IR.load vptr 0
-codegenSexpr (_, SPrint ln inner) =
+codegenSexpr (_, SPrint (TyBool, SBool ln) inner) = do
   case inner of
     (TyInt, _) -> do
       -- get the "%d\n" global string variable

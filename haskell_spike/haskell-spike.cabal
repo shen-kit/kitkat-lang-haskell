@@ -20,7 +20,7 @@ extra-doc-files:    CHANGELOG.md
 common warnings
     ghc-options: -Wall
 
-library main-lib
+library 
     exposed-modules:
       Lexer.Lexer
       Lexer.Inner

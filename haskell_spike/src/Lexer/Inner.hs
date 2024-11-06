@@ -88,17 +88,17 @@ pRWords = choice $ map pRWord rwords
         "else",
         "while",
         -- builtins
-        "print",
-        "println" -- add trailing '\n'
+        "print"
       ]
 
 pIdent :: Parser Token
 pIdent = TIdent <$> lexeme ((:) <$> letterChar <*> many alphaNumChar)
 
 pSymbol :: Parser Token
-pSymbol = choice [pSemi, pLParen, pRParen, pLBrace, pRBrace]
+pSymbol = choice [pSemi, pComma, pLParen, pRParen, pLBrace, pRBrace]
   where
     pSemi = TSemi <$ stringLex ";"
+    pComma = TComma <$ stringLex ","
     pLParen = TLParen <$ stringLex "("
     pRParen = TRParen <$ stringLex ")"
     pLBrace = TLBrace <$ stringLex "{"

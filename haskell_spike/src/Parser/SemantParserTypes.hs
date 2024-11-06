@@ -13,7 +13,7 @@ data SExpr'
   | SBool Bool
   | SStr Text
   | SBinOp BOp SExpr SExpr
-  | SPrint Bool SExpr -- <add '\n'?> <to_print>
+  | SPrint SExpr SExpr -- <add '\n'?> <to_print>
   | SIdent Text
   deriving (Show, Eq)
 

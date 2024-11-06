@@ -57,9 +57,11 @@ checkExpr (EIdent vname) = do
   pure (vtype, SIdent vname)
 checkExpr (EPrint ln inner) = do
   inner'@(t, _) <- checkExpr inner
+  ln'@(tLn, _) <- checkExpr ln
+  when (tLn /= TyBool) $ throwError "second argument to print must be of type boolean"
   case t of
     TyNull -> error $ "cannot print value: " ++ show inner
-    _ -> pure (TyNull, SPrint ln inner')
+    _ -> pure (TyNull, SPrint ln' inner')
 
 -- type-check a statement node of the AST, return a typed statement node
 checkStatement :: Statement -> Semant SStatement
@@ -105,4 +107,3 @@ checkProgram ast = evalState (runExceptT (checkProgram' ast)) initAst
       stmts' <- mapM checkStatement stmts
       vars' <- gets vars
       pure $ SAst {body = stmts', vars = vars'}
-

@@ -16,6 +16,7 @@ data Token
   | TRBrace -- }
   | TSQuote -- '
   | TDQuote -- "
+  | TComma -- ,
   | TSemi -- ;
   | TEOF
   deriving (Show, Eq, Ord)
