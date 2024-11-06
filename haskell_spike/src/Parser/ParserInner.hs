@@ -8,7 +8,7 @@ import Data.String (IsString (fromString))
 import Data.Void (Void)
 import Lexer.TokenTypes
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
-import Text.Megaparsec (Parsec, between, choice, many, option, satisfy)
+import Text.Megaparsec (MonadParsec (try), Parsec, between, choice, many, option, satisfy, sepBy)
 
 -- ==================== TYPES + HELPERS ====================
 
@@ -81,21 +81,26 @@ pExpr = choice [makeExprParser pTerm opTable, pPrint, pIdent]
         -- binL' opType sym = InfixL $ EBinOp opType <$ operator sym
         binR opType sym = InfixR $ EBinOp opType <$ isTok (TBinOp sym)
 
+    pParens :: TokParser a -> TokParser a
+    pParens = between (isTok TLParen) (isTok TRParen)
+
     pTerm :: TokParser Expr
-    pTerm = choice [parseInt, pIdent, parseBrackets, parseBool, parseStr]
+    pTerm = choice [parseInt, pParens pExpr, parseBool, parseStr, pFunc, pIdent]
       where
         parseInt = do
           TInt val <- satisfy isInt
           pure $ EInt val
-        parseBrackets = between (isTok TLParen) (isTok TRParen) pExpr
         parseBool = do
           TRWord word <- satisfy isBool
           pure $ EBool $ word == "true"
         parseStr = do
           TString s <- satisfy isStr
           pure $ EString s
+        pFunc = try $ do
+          (EIdent ident) <- pIdent
+          args <- pParens (pExpr `sepBy` isTok TComma)
+          pure $ ECall ident args
 
-    -- TODO: desugar to be the same as any other function
     pPrint :: TokParser Expr
     pPrint = do
       _ <- isTok (TRWord "print")

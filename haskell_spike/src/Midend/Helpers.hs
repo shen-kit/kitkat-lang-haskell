@@ -3,10 +3,15 @@
 module Midend.Helpers (module Midend.Helpers) where
 
 import Data.ByteString.Short (ShortByteString)
+import Data.Text as T
 import LLVM.AST
 import LLVM.AST.Constant (Constant (GlobalReference))
 import LLVM.AST.Type (i1, i32, i8, ptr, void)
 import Parser.ParserTypes qualified as PTypes
+
+-- Text to String, keeping escape sequences
+tts :: Text -> String
+tts = unpack . T.replace "\\n" "\n"
 
 -- =====================================================
 -- =                    GET GLOBALS                    =

@@ -1,19 +1,21 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE TupleSections #-}
 
 module Midend.Codegen (generateLLVM) where
 
-import Control.Monad.State (State, evalState, gets, modify, void, when)
+import Control.Monad.State (MonadState, State, evalState, gets, modify, void, when)
 import Data.Map qualified as M
-import Data.Text (Text, unpack)
+import Data.Text (Text)
+import LLVM.AST (Instruction (function))
 import LLVM.AST qualified as AST
 import LLVM.AST.IntegerPredicate as IP
 import LLVM.AST.Type (i32, i8, ptr)
 import LLVM.IRBuilder qualified as IR
 import Midend.Helpers
 import Parser.ParserTypes (BOp (..), Type (..))
-import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), body)
+import Parser.SemantParserTypes (SAst (funcs), SExpr, SExpr' (..), SStatement (..), body)
 
 -- ========================================
 -- =                 TYPES                =
@@ -23,7 +25,7 @@ import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), body
 -- vars    => var_name    : pointer
 data Env = Env
   { strings :: M.Map Text AST.Operand,
-    vars :: M.Map Text AST.Operand
+    operands :: M.Map Text AST.Operand
   }
   deriving (Eq, Show)
 
@@ -32,6 +34,9 @@ type LLVM = IR.ModuleBuilderT (State Env)
 
 -- IRBuilderT needs to include the ModuleBuilderT functionality for globalStringPtr to work
 type Builder = IR.IRBuilderT LLVM
+
+registerOperand :: (MonadState Env m) => Text -> AST.Operand -> m ()
+registerOperand name op = modify $ \env -> env {operands = M.insert name op (operands env)}
 
 -- ============================================================
 -- =                EXPRESSION CODE-GENERATION                =
@@ -50,7 +55,7 @@ codegenSexpr (TyStr, SStr s) = do
     Just op -> pure op
     Nothing -> do
       let name' = AST.mkName $ "_str" <> show (M.size strs)
-      const' <- IR.globalStringPtr (unpack s) name'
+      const' <- IR.globalStringPtr (tts s) name'
       let op = AST.ConstantOperand const'
       modify $ \env -> env {strings = M.insert s op strs}
       pure op
@@ -72,7 +77,7 @@ codegenSexpr (t, SBinOp op l r) = do
       _ -> error $ "cannot add type: " ++ show t
     Assign -> case l of
       (_, SIdent vname) -> do
-        table <- gets vars
+        table <- gets operands
         -- get the value (pointer) at key=vname, error if key doesn't exist
         let vptr = table M.! vname
         IR.store vptr 0 r'
@@ -99,7 +104,7 @@ codegenSexpr (t, SBinOp op l r) = do
     LAnd -> IR.and l' r'
     LOr -> IR.or l' r'
 codegenSexpr (_, SIdent vname) = do
-  table <- gets vars
+  table <- gets operands
   -- get the value (pointer) at key=vname, error if key doesn't exist
   let vptr = table M.! vname
   IR.load vptr 0
@@ -123,6 +128,10 @@ codegenSexpr (_, SPrint (TyBool, SBool ln) inner) = do
       exp' <- codegenSexpr inner
       IR.call printfOp [(fmtOp, []), (exp', [])]
     (TyNull, _) -> error "cannot print null value"
+codegenSexpr (_, SCall fn args) = do
+  args' <- mapM (fmap (,[]) . codegenSexpr) args
+  f <- gets ((M.! fn) . operands)
+  IR.call f args'
 codegenSexpr s = error $ "cannot generate LLVM IR code for the semantic expression: " ++ show s
 
 -- ============================================================
@@ -136,14 +145,14 @@ codegenStatement (SStmtExpr e) = void $ codegenSexpr e
 codegenStatement (SStmtBlock stmts) = mapM_ codegenStatement stmts
 codegenStatement (SStmtVarDecl ty vName val) = void $ do
   -- get the table and validate variable not-yet declared
-  table <- gets vars
+  table <- gets operands
   when (M.member vName table) $ error "cannot re-declare existing variable."
   -- allocate space and store the value
   varPtr <- IR.alloca (toLLVMType ty) Nothing 0
   initVal <- codegenSexpr val
   IR.store varPtr 0 initVal
   -- put the vname:pointer pair into the vars table of the inner monad (State Env)
-  modify $ \env -> env {vars = M.insert vName varPtr (vars env)}
+  registerOperand vName varPtr
 
 -- generate code for if/else if/else blocks, using conditional branch
 codegenStatement (SStmtIf cond ifBody elseBody) = mdo
@@ -207,7 +216,8 @@ generateLLVM program =
   flip evalState initState $
     IR.buildModuleT "myModule" $ do
       -- external variadic argument function definition
-      _ <- IR.externVarArgs (AST.mkName "printf") [ptr i8] i32
+      printf <- IR.externVarArgs (AST.mkName "printf") [ptr i8] i32
+      registerOperand "printf" printf
       -- helper constants
       declareGlobalStr "%s" "strFmt"
       declareGlobalStr "%s\n" "strFmtLn"
@@ -215,9 +225,9 @@ generateLLVM program =
       declareGlobalStr "%d\n" "intFmtLn"
       codegenMainFunc program
   where
-    initState = Env {vars = M.empty, strings = M.empty}
+    initState = Env {operands = M.empty, strings = M.empty}
 
     -- helper: declares global string variable and adds to the environment
     declareGlobalStr str name' = do
-      vptr <- IR.globalStringPtr str name'
-      modify $ \env -> env {vars = M.insert "intFmt" (AST.ConstantOperand vptr) (vars env)}
+      vptr <- IR.globalStringPtr str $ AST.mkName (tts name')
+      registerOperand name' $ AST.ConstantOperand vptr

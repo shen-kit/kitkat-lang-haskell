@@ -15,6 +15,7 @@ data SExpr'
   | SBinOp BOp SExpr SExpr
   | SPrint SExpr SExpr -- <add '\n'?> <to_print>
   | SIdent Text
+  | SCall Text [SExpr]
   deriving (Show, Eq)
 
 -- statements don't have an intrinsic value
@@ -29,8 +30,11 @@ data SStatement
 -- map var_name:var_type
 type Vars = M.Map Text Type
 
+data SFunction = SFunction {styp :: Type, sname :: Text, sformals :: [Vars], sbody :: SStatement}
+  deriving (Show, Eq)
+
 -- a collection of statements and the existing bindings
-data SAst = SAst {body :: [SStatement], vars :: Vars}
+data SAst = SAst {body :: [SStatement], vars :: Vars, funcs :: [SFunction]}
   deriving (Show, Eq)
 
 -- accumulate state to add statements and bindings

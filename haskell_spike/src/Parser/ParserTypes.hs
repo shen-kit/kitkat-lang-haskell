@@ -26,6 +26,7 @@ data Expr
   | EBinOp BOp Expr Expr
   | EPrint Expr Expr -- <add '\n'?> <to_print>
   | EIdent Text
+  | ECall Text [Expr] -- function call, <func_name> [<args>]
   deriving (Show, Eq, Ord)
 
 -- define separate name for clarity in constructors

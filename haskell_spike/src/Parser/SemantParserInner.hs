@@ -62,6 +62,9 @@ checkExpr (EPrint ln inner) = do
   case t of
     TyNull -> error $ "cannot print value: " ++ show inner
     _ -> pure (TyNull, SPrint ln' inner')
+checkExpr (ECall fn args) = do
+  args' <- mapM checkExpr args
+  pure (TyNull, SCall fn args')
 
 -- type-check a statement node of the AST, return a typed statement node
 checkStatement :: Statement -> Semant SStatement
@@ -100,7 +103,7 @@ checkVarType varname = do
 checkProgram :: Ast -> Either String SAst
 checkProgram ast = evalState (runExceptT (checkProgram' ast)) initAst
   where
-    initAst = SAst {body = [], vars = M.empty}
+    initAst = SAst {body = [], vars = M.empty, funcs = []}
     -- initAst = SAst {stmts = [], vars = M.empty}
     checkProgram' :: Ast -> Semant SAst
     checkProgram' (Ast stmts) = do
