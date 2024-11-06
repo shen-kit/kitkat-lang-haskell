@@ -52,18 +52,17 @@ pBinOp =
   TBinOp
     <$> ( stringLex ">=" -- ge
             <|> stringLex "<=" -- le
+            <|> stringLex ">" -- gt
+            <|> stringLex "<" -- lt
             <|> stringLex "==" -- eq
             <|> stringLex "!=" -- neq
             <|> stringLex "+" -- add
             <|> stringLex "-" -- subtract
             <|> stringLex "*" -- multiply
             <|> stringLex "/" -- divide
-            <|> stringLex "%" -- modulus
             <|> stringLex "=" -- assign
             <|> stringLex "&" -- logical AND
             <|> stringLex "|" -- logical OR
-            <|> stringLex ">" -- gt
-            <|> stringLex "<" -- lt
         )
 
 -- parse a reserved word
