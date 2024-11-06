@@ -29,6 +29,7 @@ library main-lib
       Parser.ParserInner
       Parser.ParserTypes
       Parser.SemantParser
+      Parser.SemantParserInner
       Parser.SemantParserTypes
       Midend.Codegen
       Midend.Helpers
