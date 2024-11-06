@@ -8,9 +8,9 @@ import Data.Void (Void)
 
 -- testEq <expected> <parser> <parser_input>
 -- checks for equality from running a parser
-testEq :: (Show b, Eq a, Eq b) => Parsec Void a b -> a -> b -> Test
+testEq :: (Show a, Show b, Eq a, Eq b) => Parsec Void a b -> a -> b -> Test
 testEq p input expected = case parse p "" input of
-  Left err -> TestCase $ assertFailure $ "parser failed to parse input"
+  Left err -> TestCase $ assertFailure $ "parser failed to parse input: " ++ show input
   Right res -> expected ~=? res
 
 -- checks that a parser fails when given an input

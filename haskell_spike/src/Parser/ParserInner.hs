@@ -64,7 +64,6 @@ parseStmt =
       body <- parseStmt
       pure $ StmtWhile cond body
 
-
 pExpr :: TokParser Expr
 pExpr = choice [makeExprParser pTerm opTable, pPrint, pPrintln, pIdent]
   where
@@ -83,14 +82,11 @@ pExpr = choice [makeExprParser pTerm opTable, pPrint, pPrintln, pIdent]
         binR opType sym = InfixR $ EBinOp opType <$ isTok (TBinOp sym)
 
     pTerm :: TokParser Expr
-    pTerm = choice [parseInt, parseIdent, parseBrackets, parseBool, parseStr]
+    pTerm = choice [parseInt, pIdent, parseBrackets, parseBool, parseStr]
       where
         parseInt = do
           TInt val <- satisfy isInt
           pure $ EInt val
-        parseIdent = do
-          TIdent vname <- satisfy isIdent
-          pure $ EIdent $ fromString vname
         parseBrackets = between (isTok TLParen) (isTok TRParen) pExpr
         parseBool = do
           TRWord word <- satisfy isBool
