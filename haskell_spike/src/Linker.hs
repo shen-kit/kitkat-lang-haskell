@@ -12,9 +12,9 @@ import System.Process
 -- generates an executable from a module at a given path
 compile :: Module -> FilePath -> IO ()
 compile llvmModule outfile = do
-  createDirectoryIfMissing True "build"
-  withCurrentDirectory "build" $ do
-    let llvmText = ppllvm llvmModule
-    T.writeFile (outfile ++ ".ll") (toStrict llvmText)
-    callProcess "llc" [outfile ++ ".ll", "-o", outfile ++ ".s"]
-    callProcess "gcc" [outfile ++ ".s", "-o", outfile, "-lc"]
+  -- createDirectoryIfMissing True "build"
+  -- withCurrentDirectory "build" $ do
+  let llvmText = ppllvm llvmModule
+  T.writeFile (outfile ++ ".ll") (toStrict llvmText)
+  callProcess "llc" [outfile ++ ".ll", "-o", outfile ++ ".s"]
+  callProcess "gcc" [outfile ++ ".s", "-o", outfile, "-lc"]

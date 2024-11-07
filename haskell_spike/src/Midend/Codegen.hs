@@ -8,14 +8,13 @@ module Midend.Codegen (generateLLVM) where
 import Control.Monad.State (MonadState, State, evalState, gets, modify, void, when)
 import Data.Map qualified as M
 import Data.Text (Text)
-import LLVM.AST (Instruction (function))
 import LLVM.AST qualified as AST
 import LLVM.AST.IntegerPredicate as IP
 import LLVM.AST.Type (i32, i8, ptr)
 import LLVM.IRBuilder qualified as IR
 import Midend.Helpers
 import Parser.ParserTypes (BOp (..), Type (..))
-import Parser.SemantParserTypes (SAst (funcs), SExpr, SExpr' (..), SStatement (..), body)
+import Parser.SemantParserTypes (SAst, SExpr, SExpr' (..), SStatement (..), body)
 
 -- ========================================
 -- =                 TYPES                =

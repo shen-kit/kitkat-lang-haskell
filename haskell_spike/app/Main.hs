@@ -13,19 +13,22 @@ import Parser.SemantParser (checkProgram)
 import Parser.SemantParserTypes (SAst)
 import Text.Megaparsec (parse, errorBundlePretty)
 import Linker as Linker
+import System.Environment (getArgs)
+import Control.Monad (unless)
+import System.Exit (die) -- show error msg and exit
 
 main :: IO ()
 main = do
-  -- putStr "infile: "
-  -- infile <- getLine
-  let infile = "test.kitkat" 
+  args <- getArgs
+  unless (length args == 2) $ die "Error: Use this program by running `kitkat <infile> <outfile>`"
+  let [infile, outfile] = args
   putStr "select 1-2:\n1. print tokens\n2. print AST\n3. print SAST\n4. compile file\n: "
   choice <- getLine
   case choice of
     "1" -> getTokens infile >>= print
     "2" -> getAST infile >>= print
     "3" -> getSAST infile >>= print
-    "4" -> compileFile infile
+    "4" -> compileFile infile outfile
     _ -> putStrLn "invalid option selected. Exiting..."
   where
 
@@ -51,11 +54,10 @@ main = do
           Left err -> error $ show err
           Right sast -> pure sast
 
-    compileFile :: FilePath -> IO ()
-    compileFile infile = do
-      let outFile = "out"
+    compileFile :: FilePath -> FilePath -> IO ()
+    compileFile infile outfile = do
       sast <- getSAST infile
       let llvmModule = generateLLVM sast
-      Linker.compile llvmModule outFile
-      putStrLn $ "wrote to " ++ outFile
+      Linker.compile llvmModule outfile
+      putStrLn $ "wrote to " ++ outfile
 

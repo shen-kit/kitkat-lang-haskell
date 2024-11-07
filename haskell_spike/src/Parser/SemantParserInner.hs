@@ -104,9 +104,8 @@ checkProgram :: Ast -> Either String SAst
 checkProgram ast = evalState (runExceptT (checkProgram' ast)) initAst
   where
     initAst = SAst {body = [], vars = M.empty, funcs = []}
-    -- initAst = SAst {stmts = [], vars = M.empty}
     checkProgram' :: Ast -> Semant SAst
     checkProgram' (Ast stmts) = do
       stmts' <- mapM checkStatement stmts
       vars' <- gets vars
-      pure $ SAst {body = stmts', vars = vars'}
+      pure $ SAst {body = stmts', vars = vars', funcs = []}
