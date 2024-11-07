@@ -2,9 +2,9 @@
 
 module Parser.SemantParserInner where
 
-import Control.Monad.Except
+import Control.Monad.Except (MonadError (throwError), runExceptT, unless, when)
 import Control.Monad.State (evalState, gets, modify)
-import Data.Map as M
+import Data.Map as M (empty, insert, (!))
 import Data.Text (Text)
 import Parser.ParserTypes (Ast (Ast), BOp (..), Expr (..), Statement (..), Type (..))
 import Parser.SemantParserTypes (SAst (..), SExpr, SExpr' (..), SStatement (..), Semant)
@@ -72,14 +72,14 @@ checkStatement (StmtExpr e) = SStmtExpr <$> checkExpr e
 checkStatement (StmtBlock exprs) = do
   let flattened = flatten exprs
   SStmtBlock <$> mapM checkStatement flattened
-  where
-    flatten [] = []
-    flatten (StmtBlock s : xs) = flatten (s ++ xs)
-    flatten (s : xs) = s : flatten xs
+ where
+  flatten [] = []
+  flatten (StmtBlock s : xs) = flatten (s ++ xs)
+  flatten (s : xs) = s : flatten xs
 checkStatement (StmtVarDecl declType vName expr) = do
   expr'@(actualType, _) <- checkExpr expr
   when (actualType /= declType) $ throwError "assignment and expression types differ"
-  modify $ \s -> s {vars = M.insert vName actualType (vars s)}
+  modify $ \s -> s{vars = M.insert vName actualType (vars s)}
   pure $ SStmtVarDecl declType vName expr'
 checkStatement (StmtIf cond ifBody elseBody) = do
   cond'@(condTy, _) <- checkExpr cond
@@ -102,10 +102,10 @@ checkVarType varname = do
 -- returns Either <error msg> <semantically-typed AST>
 checkProgram :: Ast -> Either String SAst
 checkProgram ast = evalState (runExceptT (checkProgram' ast)) initAst
-  where
-    initAst = SAst {body = [], vars = M.empty, funcs = []}
-    checkProgram' :: Ast -> Semant SAst
-    checkProgram' (Ast stmts) = do
-      stmts' <- mapM checkStatement stmts
-      vars' <- gets vars
-      pure $ SAst {body = stmts', vars = vars', funcs = []}
+ where
+  initAst = SAst{body = [], vars = M.empty, funcs = []}
+  checkProgram' :: Ast -> Semant SAst
+  checkProgram' (Ast stmts) = do
+    stmts' <- mapM checkStatement stmts
+    vars' <- gets vars
+    pure $ SAst{body = stmts', vars = vars', funcs = []}
