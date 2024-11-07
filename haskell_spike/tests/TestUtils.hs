@@ -34,7 +34,7 @@ testParseFail p input = TestCase $ assertBool "" (isLeft $ parse p "" input)
 
 -- initialise with variable myVar of type int (to test assignment/retrieval)
 initialState :: SAst
-initialState = SAst {body = [], vars = M.fromList [("myVar", TyInt)]}
+initialState = SAst {body = [], vars = M.fromList [("myVar", TyInt)], funcs = []}
 
 testSemantEq :: (Eq c, Show c) => (a -> ExceptT String (State SAst) c) -> a -> c -> Test
 testSemantEq f input expected = evalState (runExceptT (f input)) initialState ~=? Right expected

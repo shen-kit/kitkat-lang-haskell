@@ -89,7 +89,7 @@ tLexer = TestList [tEmptyInput, tComments, tLexerSingle, tLexerMany]
     tComments = testParseEq lexer "# comment" $ [TEOF]
     tLexerSingle = testParseEq lexer "1" $ [TInt 1, TEOF]
     -- lex a long string containing all types of tokens
-    tLexerMany = testParseEq lexer  "(int 123) & {str \"mystring\"} | bool true + myIdentifier / null; # keywords\nif else == while != print >= println " $ [TLParen,TRWord "int",TInt 123,TRParen,TBinOp "&",TLBrace,TRWord "str",TString "mystring",TRBrace,TBinOp "|",TRWord "bool",TRWord "true",TBinOp "+",TIdent "myIdentifier",TBinOp "/",TRWord "null",TSemi,TRWord "if",TRWord "else",TBinOp "==",TRWord "while",TBinOp "!=",TRWord "print",TBinOp ">=",TRWord "println",TEOF]
+    tLexerMany = testParseEq lexer  "(int 123) & {str \"mystring\"} | bool true + myIdentifier / null; # keywords\nif else == while != print >= println " $ [TLParen,TRWord "int",TInt 123,TRParen,TBinOp "&",TLBrace,TRWord "str",TString "mystring",TRBrace,TBinOp "|",TRWord "bool",TRWord "true",TBinOp "+",TIdent "myIdentifier",TBinOp "/",TRWord "null",TSemi,TRWord "if",TRWord "else",TBinOp "==",TRWord "while",TBinOp "!=",TRWord "print",TBinOp ">=",TIdent "println",TEOF]
 
 tests :: Test
 tests = TestList [tPrimitives, tRWord, tBinOp, tSymbol, tIdent, tLexer]

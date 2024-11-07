@@ -59,8 +59,8 @@ tCheckExpr = TestList [tLiteral, tBinaryOps, tBooleanOps, tAssignment, tIdent, t
 
     -- Print expressions test (e.g., `print` and `println`)
     tPrint = TestList [
-        testSemantEq checkExpr (EPrint False (EInt 42)) (TyNull, SPrint False (TyInt, SInt 42)),
-        testSemantEq checkExpr (EPrint True (EString "hello")) (TyNull, SPrint True (TyStr, SStr "hello"))
+        testSemantEq checkExpr (EPrint (EBool False) (EInt 42)) (TyNull, SPrint (TyBool, SBool False) (TyInt, SInt 42)),
+        testSemantEq checkExpr (EPrint (EBool True) (EString "hello")) (TyNull, SPrint (TyBool, SBool True) (TyStr, SStr "hello"))
       ]
 
 -- ============================================================
@@ -137,7 +137,8 @@ tCheckProgram = TestList [tValidProgram]
                        SStmtIf (TyBool, SBool True) (SStmtExpr (TyInt, SInt 3)) (SStmtExpr (TyInt, SInt 4)),
                        SStmtWhile (TyBool, SBool False) (SStmtExpr (TyInt, SInt 5))
                      ],
-              vars = M.fromList [("x", TyInt), ("flag", TyBool)]
+              vars = M.fromList [("x", TyInt), ("flag", TyBool)],
+              funcs = []
             }
       in TestCase $ assertEqual "" (Right expectedSAst) (checkProgram ast)
 

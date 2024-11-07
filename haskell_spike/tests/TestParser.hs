@@ -25,11 +25,11 @@ tType = TestList [tIntType, tNullType, tBoolType, tStrType]
 -- ============================================================
 
 tExpr :: Test
-tExpr = TestList [tIdent, tPrint, tPrintln, tLiterals, tBrackets, tBinOps1, tBinOpsSequence]
+tExpr = TestList [tIdent, tPrint, tPrintNoln, tLiterals, tBrackets, tBinOps1, tBinOpsSequence]
   where
     tIdent = testParseEq pExpr [TIdent "myIdentifier"] $ EIdent "myIdentifier"
-    tPrint = testParseEq pExpr [TRWord "print", TLParen, TInt 123, TRParen] $ EPrint False (EInt 123)
-    tPrintln = testParseEq pExpr [TRWord "println", TLParen, TInt 123, TRParen] $ EPrint True (EInt 123)
+    tPrint = testParseEq pExpr [TRWord "print", TLParen, TInt 123, TRParen] $ EPrint (EBool True) (EInt 123)
+    tPrintNoln = testParseEq pExpr [TRWord "print", TLParen, TInt 123, TComma, TRWord "false", TRParen] $ EPrint (EBool False) (EInt 123)
     -- literal parsers
     tLiterals = TestList [
         testParseEq pExpr [TInt 0] $ EInt 0, -- 0
