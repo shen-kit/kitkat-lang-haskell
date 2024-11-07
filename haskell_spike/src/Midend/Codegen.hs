@@ -138,7 +138,8 @@ codegenSexpr s = error $ "cannot generate LLVM IR code for the semantic expressi
 -- ============================================================
 
 -- generate LLVM IR for a semantically-typed statement
--- return nothing
+-- IRBuilder's Builder monad updates the state of the module when instructions are called
+--   (e.g. IR.int32 1 | IR.call printfOp), even though this function returns ()
 codegenStatement :: SStatement -> Builder ()
 codegenStatement (SStmtExpr e) = void $ codegenSexpr e
 codegenStatement (SStmtBlock stmts) = mapM_ codegenStatement stmts
