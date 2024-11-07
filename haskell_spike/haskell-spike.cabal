@@ -32,6 +32,7 @@ library
       Parser.SemantParserInner
       Parser.SemantParserTypes
       Midend.Codegen
+      Midend.CodegenInner
       Midend.Helpers
       Linker
       LLVM.Pretty
@@ -108,4 +109,17 @@ test-suite test-semant-parser
                  text,
                  mtl,
                  containers
+  default-language: Haskell2010
+
+test-suite test-codegen
+  type: exitcode-stdio-1.0
+  main-is: TestCodegen.hs
+  hs-source-dirs: tests
+  build-depends: base ^>=4.17.2.1,
+                 HUnit,
+                 haskell-spike,
+                 text,
+                 llvm-hs-pure,
+                 containers,
+                 mtl
   default-language: Haskell2010
